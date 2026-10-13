@@ -11,6 +11,11 @@
     <script src="js/detect-transparency-image.js"></script>
     
     <style>
+      html, body {
+        padding: 0;
+        margin: 0;
+      }
+      
       body {
         overflow: scroll;
         background-color: black;
@@ -28,16 +33,23 @@
       }
       
       #map {
+        visibility: hidden; /* Will show after start countdown */
         position: relative;
         background: navy;
         /* background: radial-gradient(circle,rgba(63, 94, 251, 1) 0%, rgba(252, 70, 107, 1) 100%); */
         border: 5px groove goldenrod;
         margin-left: auto;
         margin-right: auto;
+        margin-bottom: 10px;
+      }
+      
+      #configOuter {
+        cursor: pointer;
+        margin: 10px;
       }
       
       #configWrap {
-        padding: 20px;
+        margin: 20px;
       }
       
       #infoWrap {
@@ -49,7 +61,6 @@
         position: absolute;
         user-select: none;
         opacity: 0.9;
-        /* TODO Need to scale images (by hand), but transform doesn't interact with Neodrag: transform: scale(0.25); */
       }
       
       .piece:hover {
@@ -68,10 +79,53 @@
         user-select: none;
         position: absolute;
       }
+      
+      #scoreWrap, #scoreBar {
+        height: 10px;
+      }
+      
+      #scoreWrap {
+        background-color: black;
+        width: 100%;
+      }
+      
+      #scoreBar {
+        font-size: 10px;
+        color: black;
+        text-shadow: 0 0 2px white;
+        transition: width linear 999ms;
+        width: 0%;
+        background: #2A7B9B;
+        background: linear-gradient(90deg,rgba(237, 221, 83, 1) 0%, rgba(87, 199, 133, 1) 50%, rgba(42, 123, 155, 1) 100%);
+        border-right: 1px solid yellow;
+      }
+      
+      #overlayMessage {
+        background-color: black;
+        border-radius: 20px;
+        border: 1px solid gray;
+        box-shadow: 10px 10px 5px navy;
+        opacity: 0.9;
+        padding: 40px;
+        z-index: 9999;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: xx-large;
+      }
     </style>
   </head>
   <body>
-    <details style="cursor: pointer; padding-bottom: 10px;">
+    <div id="scoreWrap">
+      <div id="scoreBar">
+        &nbsp;
+      </div>
+    </div>
+    
+    <div id="overlayMessage"></div>
+    
+    <details id="configOuter">
       <summary>Configuration and Setup</summary>
       <div id="configWrap">
         <b>Map Size</b><br/>
@@ -100,24 +154,32 @@
         &nbsp;
       </div>
     </div>
-    </div>
     
     <script type="module">
-      const BLUEMAN_DIR = "blueman/";
+      const DEBUG = false;
       
+      const BLUEMAN_DIR = "blueman/";
+      const START_SCORE = DEBUG ? 2 : 30;
+      
+      let paused = false;
       let currentZIndex = 1;
+      let currentCountdown = 3;
+      let scoreInterval = null; // setInterval for score countdown
       
       import { effect, reactive, text } from 'https://cdn.jsdelivr.net/npm/supastate/dist/index.mjs';
       
       const state = reactive({
         mapWidth: 1000,
-        mapHeight: 700
+        mapHeight: 700,
+        score: START_SCORE
       });
       const ele = {
         map: document.getElementById("map"),
         mapWidthIn: document.getElementById("mapWidthIn"),
         mapHeightIn: document.getElementById("mapHeightIn"),
         doll: document.getElementById("doll"),
+        overlayMessage: document.getElementById("overlayMessage"),
+        scoreBar: document.getElementById("scoreBar"),
       }
       
       function getRandomInt(min, max) {
@@ -159,7 +221,8 @@
             
             text("#infoWrap", () => `Off By: X=${deltaX}, Y=${deltaY}`);
             
-            // TODO Should delta apply to score immediately on drop? Likely yes. Otherwise will need to calculate total deltas at the end
+            // Penalize based on how far off the drop was
+            state.score -= Math.abs(deltaX) + Math.abs(deltaY);
           }
         });
       }
@@ -205,7 +268,43 @@
         ele.map.appendChild(newPiece);
       }
       
+      function startGame() {
+        ele.map.style.visibility = "visible";
+        ele.overlayMessage.style.visibility = "hidden";
+        
+        scoreBar.style.width = "100%";
+        scoreInterval = setInterval(() => {
+          if (!paused) {
+            state.score--;
+            text("#scoreBar", () => state.score);
+            
+            scoreBar.style.width = parseInt(state.score / START_SCORE * 100) + "%";
+          }
+        }, 1000);
+      }
+      
+      function stopGame() {
+        if (scoreInterval) {
+          clearInterval(scoreInterval);
+        }
+        
+        ele.overlayMessage.style.visibility = "visible";
+        
+        // After the interval stops we update the page text
+        setTimeout(() => {
+          ele.map.style.pointerEvents = "none";
+          
+          state.score = null;
+          text("#scoreBar", () => "");
+          text("#overlayMessage", () => "Game is over, nice one");
+        });
+      }
+      
       function init() {
+        document.addEventListener("visibilitychange", (event) => {
+          paused = !paused;
+        });
+        
         ele.map.style.backgroundColor = getRandomColor();
         ele.map.style.borderColor = getRandomColor();
         
@@ -218,11 +317,19 @@
           ele.map.style.width = state.mapWidth + "px";
           ele.map.style.height = state.mapHeight + "px";
         };
+        updateMapDimensions();
         
         effect(() => {
           updateMapDimensions();
         });
-        updateMapDimensions();
+        
+        effect(() => {
+          // Little -1 so the CSS transition can finish
+          if (typeof state.score === 'number' &&
+              state.score <= -1) {
+            stopGame();
+          }
+        });
         
         // Setup the pieces of the blue man across the map
         createBodyPiece(BLUEMAN_DIR + "doll-head.png");
@@ -232,6 +339,28 @@
         createBodyPiece(BLUEMAN_DIR + "doll-leg-port.png");
         createBodyPiece(BLUEMAN_DIR + "doll-groin.png");
         createBodyPiece(BLUEMAN_DIR + "doll-leg-starboard.png");
+        
+        // Start the countdown
+        if (DEBUG) {
+          startGame();
+        }
+        else {
+          text("#overlayMessage", () => currentCountdown);
+          const countdownInterval = setInterval(() => {
+            currentCountdown--;
+            
+            if (currentCountdown <= 0) {
+              startGame();
+              
+              if (countdownInterval) {
+                clearInterval(countdownInterval);
+              }
+            }
+            else {
+              text("#overlayMessage", () => currentCountdown);
+            }
+          }, 999);
+        }
       }
       
       addEventListener("DOMContentLoaded", (event) => {
