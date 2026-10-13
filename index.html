@@ -156,8 +156,9 @@
     </div>
     
     <script type="module">
-      const DEBUG = false;
+      import { effect, reactive, text } from 'https://cdn.jsdelivr.net/npm/supastate/dist/index.mjs';
       
+      const DEBUG = new URLSearchParams(window.location.search).get("debug") ?? false;
       const BLUEMAN_DIR = "blueman/";
       const START_SCORE = DEBUG ? 2 : 30;
       
@@ -165,8 +166,6 @@
       let currentZIndex = 1;
       let currentCountdown = 3;
       let scoreInterval = null; // setInterval for score countdown
-      
-      import { effect, reactive, text } from 'https://cdn.jsdelivr.net/npm/supastate/dist/index.mjs';
       
       const state = reactive({
         mapWidth: 1000,
