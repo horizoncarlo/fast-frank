@@ -23,11 +23,41 @@ Set max window size to be fair and consistent between monitors
 Supastate https://www.npmjs.com/package/supastate for light state
 
 # What is Left
-- TODO Terrain and obstacle generation - different types, locations, etc. Moving obstacles too
+- TODO ntfy.sh on game win/loss
+- TODO Terrain and obstacle generation - different types, locations, maybe positive effects?, etc. Moving obstacles too
   - Integrate via Drag event, check hit detection via document.elementsFromPoint
+  - **This is key** the idea is there are different choices and paths, there should be SOME level of strategy / difference between players on how they approach a map
+- TODO Limb modifications and mutators - decoy (no-move cursor, lose points if dropped), bomb (countdown then explode, minus point, reposition), shrunken (need to spend time mousing over to grow before dragging?), rotated (q/e to rotate before dragging?), teleport (randomly jumps around screen)
 - TODO For tracking score consider details like "worst offset" and "average time" (which is tracked as dragStart to successful dragEnd)
 - TODO Config and Setup options: Name, Background gradient 1 & 2. Store some of these in local storage as well
-  - Have this as an initial screen before the map, then you press "go". Overlay the countdown over the map in that case
-- TODO Limb modifications and mutators - decoy (no-move cursor, lose points if dropped), bomb (countdown then explode, minus point, reposition), shrunken (need to spend time mousing over to grow before dragging?), rotated (q/e to rotate before dragging?), teleport (randomly jumps around screen)
+  - Have this as an initial screen before the map, then you press "go". Overlay the countdown over the map in that case. Or just remove the countdown, and have it start on first drag
 - TODO Consider additional pieces, like the groin, maybe joints are split? Could potentially be random?
-- TODO ntfy.sh on game win/loss
+  - Unlikely to be honest, would prefer to spend time on making the game more interesting in other ways
+
+# Positive/Negative Effects and Items
+Negative Effects:
+X- Time penalty on hit
+X- Teleport current limb randomly
+X- Freeze limb (can't be dragged for X seconds)
+- Slow drag
+- Super fast drag
+- Offset drag, like "confusion", need to modify position directly onDrag or something?
+- Slide a random direction (too much like teleport?)
+- Straight up do a dragEnd so you have to click to drag again?
+X- Map level visual effects: flashbang/blind, smoke, blackout, blood spatters
+- Fight something, like a rat dragging the limb, need to click it a bunch of times?
+- Banker or something, spawns a coin, need to drag coin to them to pay them off to free limb
+- QTE to unlock limb: enter key combo or type word, do a "reload" animation style, spam A/D ("joystick wiggle") to free, spawn dots that need to be clicked rapidly across the screen
+
+Positive Effects:
+X- Time bonus
+- Automatic limb locking with Perfect placement
+- Immunity to anything for a bit
+X- Undo last limb (clickable, don't drag anything onto)
+
+Moving Style:
+- Stationary
+- Left to Right
+- Top to Bottom
+- Attracted or repelled to current dragged limb
+- Random entirely
