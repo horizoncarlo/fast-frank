@@ -65,4 +65,18 @@ window.util = {
       window.location.reload();
     }
   },
+  
+  checkOverlap(element1, element2) {
+    return this.checkOverlapBounds(element1.getBoundingClientRect(),
+                                   element2.getBoundingClientRect());
+  },
+  
+  checkOverlapBounds(element1Bounds, element2Bounds) {
+    return !(
+        element1Bounds.right <= element2Bounds.left ||
+        element1Bounds.left >= element2Bounds.right ||
+        element1Bounds.bottom <= element2Bounds.top ||
+        element1Bounds.top >= element2Bounds.bottom
+    );
+  }
 }

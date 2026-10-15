@@ -93,6 +93,7 @@
         scoreInterval: null, // setInterval for score countdown
         score: {
           total: 0,
+          itemPenalty: 0,
           dropPenalty: 0,
           dropWorst: 0,
           dropBest: null
@@ -143,17 +144,17 @@
             const dropKey = getKeyFromSrc(dropped.src);
             if (dragKey === dropKey && dollPieces.hasOwnProperty(dragKey)) {
               // Penalize based on how far off the drop was
-              const modifier = Math.abs(deltaX) + Math.abs(deltaY);
+              const penalty = Math.abs(deltaX) + Math.abs(deltaY);
               
-              if (modifier !== 0) {
+              if (penalty !== 0) {
                 elements.infoWrap.textContent = `Off By: X=${deltaX}, Y=${deltaY}`;
               }
-              elements.scoreMessage.textContent = modifier === 0 ? `Perfect` : `+${modifier}s`;
+              elements.scoreMessage.textContent = penalty === 0 ? `Perfect` : `+${penalty}s`;
               
-              state.score.total += modifier;
-              state.score.dropPenalty += modifier;
-              state.score.dropWorst = Math.max(state.score.dropWorst, modifier);
-              state.score.dropBest = Math.min(state.score.dropBest ?? Infinity, modifier);
+              state.score.total += penalty;
+              state.score.dropPenalty += penalty;
+              state.score.dropWorst = Math.max(state.score.dropWorst, penalty);
+              state.score.dropBest = Math.min(state.score.dropBest ?? Infinity, penalty);
               
               dollPieces[dragKey] = true;
               
@@ -176,19 +177,11 @@
         
         const newPiece = document.createElement("img");
         newPiece.src = imgPath;
-        newPiece.draggable = false;
-        newPiece.className = "piece clickable-transparency";
+        newPiece.draggable = false; // Turn off built-in browser image dragging
+        newPiece.className = "piece";
         newPiece.style.filter = `hue-rotate(${util.getRandomInt(10, 350)}deg)`;
-        newPiece.style.left = util.getRandomInt(0, state.mapWidth) + "px";
-        newPiece.style.top = util.getRandomInt(0, state.mapHeight) + "px";
         
-        // Bound the piece to the map
-        if (parseInt(newPiece.style.left) + newPiece.width > state.mapWidth) {
-          newPiece.style.left = state.mapWidth - newPiece.width + "px";
-        }
-        if (parseInt(newPiece.style.top) + newPiece.height > state.mapHeight) {
-          newPiece.style.top = state.mapHeight - newPiece.height + "px";
-        }
+        placeBodyPiece(newPiece);
         
         new NeoDrag.Draggable(newPiece, {
           bounds: "parent",
@@ -197,16 +190,49 @@
             data.currentNode.style.zIndex = state.currentZIndex;
             elements.infoWrap.textContent = "";
           },
-          // onDrag: (data) => {
-          //   console.log(new Date() + ": DRAGGING", data);
-          // },
+          onDrag: (data) => {
+            // Store a single bounding rect before looping items
+            const ourRect = data.currentNode.getBoundingClientRect();
+            
+            for (let i = 0; i < items.all.length; i++) {
+              // Cache the bounding rect if we don't have it stored
+              if (!items.all[i].boundingRect) {
+                items.all[i].boundingRect = items.all[i].element.getBoundingClientRect();
+              }
+              
+              // If we overlap with an item, process it
+              if (util.checkOverlapBounds(ourRect, items.all[i].boundingRect)) {
+                items.all[i].onHit(data.currentNode, items.all[i].element);
+              }
+            }
+          },
           onDragEnd: (data) => {
-            console.log("onDragEnd", data);
+            console.log("onDragEnd", data, data.currentNode.style.left, data.currentNode.style.top);
             handleDrop(data);
           },
         });
         
         elements.map.appendChild(newPiece);
+      }
+      
+      function placeBodyPiece(pieceEle) {
+        pieceEle.style.left = util.getRandomInt(0, state.mapWidth) + "px";
+        pieceEle.style.top = util.getRandomInt(0, state.mapHeight) + "px";
+        
+        // Bound the piece to the map
+        if (parseInt(pieceEle.style.left) + pieceEle.width > state.mapWidth) {
+          pieceEle.style.left = state.mapWidth - pieceEle.width + "px";
+        }
+        if (parseInt(pieceEle.style.top) + pieceEle.height > state.mapHeight) {
+          pieceEle.style.top = state.mapHeight - pieceEle.height + "px";
+        }
+        
+        // Note in case this was called later, we want to remove any drag and drop translation
+        // Otherwise we could end up placed out of bounds
+        
+        // TODO Bug still, when hitting a Steering Wheel for Teleport, the next click to drag "jumps" as if offset/translated right away, when this line is uncommented
+        // Likely need to apply current .translate to our left/top style BEFORE calculating bounds? Or rather not apply it, but calculate bounds with left+translate, then adjust position accordingly
+        // pieceEle.style.translate = "0px";
       }
       
       function startGame() {
@@ -231,7 +257,7 @@
           scoreMessageRed: false
         });
         elements.scoreMessage.textContent =
-          `(${state.score.dropPenalty} was penalty [${state.score.dropBest ?? 0} best, ${state.score.dropWorst} worst], ${(state.score.total - state.score.dropPenalty).toFixed(2)} was draggin')`;
+          `(${state.score.dropPenalty} was penalty [${state.score.dropBest ?? 0} best, ${state.score.dropWorst} worst], ${(state.score.total - state.score.itemPenalty - state.score.dropPenalty).toFixed(2)} was draggin')`;
         elements.infoWrap.textContent = "";
         
         // After the interval stops we update the page text

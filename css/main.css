@@ -76,6 +76,11 @@ button:hover {
   border: 1px outset cornflowerblue;
 }
 
+.item {
+  position: absolute;
+  user-select: none;
+}
+
 .doll {
   position: relative;
   width: 256px;
@@ -126,6 +131,7 @@ button:hover {
   z-index: 9999;
   position: absolute;
   left: 50%;
+  will-change: transform;
   transform: translate(-50%, -50%);
   font-size: xx-large;
   animation: dvd-bounce 10s infinite;
