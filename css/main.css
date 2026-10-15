@@ -1,0 +1,163 @@
+html, body {
+  padding: 0;
+  margin: 0;
+}
+
+body {
+  overflow: scroll;
+  background-color: black;
+  color: #DEDEDE;
+}
+
+body, input, button {
+  font-family: monospace;
+}
+
+button {
+  height: 40px;
+  padding: 0 10px 0 10px;
+  border: 3px dashed pink;
+  border-radius: 10px;
+  background-color: darkmagenta;
+  box-shadow: 0 0 10px red;
+  color: white;
+  text-shadow: 0 0 5px black;
+  transition: background-color 500ms;
+  cursor: grab;
+}
+
+button:hover {
+  background-color: magenta;
+  border-style: dotted;
+}
+
+.centered {
+  text-align: center;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+#map {
+  visibility: hidden; /* Will show after start countdown */
+  position: relative;
+  background-color: darkslateblue;
+  border: 5px groove goldenrod;
+  margin-left: auto;
+  margin-right: auto;
+  margin-bottom: 10px;
+}
+
+#configOuter {
+  cursor: pointer;
+  margin: 10px;
+}
+
+#configWrap {
+  margin: 20px;
+}
+
+#infoWrap {
+  font-size: smaller;
+  text-shadow: 0 0 3px black;
+}
+
+.piece {
+  position: absolute;
+  user-select: none;
+  opacity: 0.9;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  /* Intentionally don't use a different cursor as groin is hard to see otherwise: cursor: crosshair; */
+}
+
+.piece:hover {
+  /* Important to override color hue rotate inline on each piece */
+  filter: drop-shadow(cornflowerblue 0 0 30px) !important;
+  border: 1px outset cornflowerblue;
+}
+
+.doll {
+  position: relative;
+  width: 256px;
+  height: 354px;
+}
+
+.dollDrop {
+  filter: brightness(0);
+  user-select: none;
+  position: absolute;
+}
+
+#scoreWrap {
+  width: 100%;
+  padding-left: 10px;
+  padding-right: 10px;
+}
+
+#scoreCounter {
+  text-align: left;
+  font-size: 2.5em;
+  color: limegreen;
+  text-shadow: 0 0 10px limegreen;
+}
+
+#scoreMessage {
+  font-size: 2em;
+  margin-left: 10px;
+}
+
+.scoreMessageBlue {
+  color: cornflowerblue;
+  text-shadow: 0 0 10px cornflowerblue;
+}
+
+.scoreMessageRed {
+  color: red;
+  text-shadow: 0 0 10px red;
+}
+
+#overlayMessageWrap {
+  background-color: black;
+  border-radius: 20px;
+  border: 1px solid gray;
+  box-shadow: 10px 10px 5px navy;
+  opacity: 0.9;
+  padding: 40px;
+  z-index: 9999;
+  position: absolute;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: xx-large;
+  animation: dvd-bounce 10s infinite;
+  transition: top 10s linear, left 10s linear;
+}
+
+#overlayMessageWrap:hover {
+  animation-play-state: paused;
+}
+
+@keyframes dvd-bounce {
+  0% {
+    top: 20%;
+  }
+  
+  50% {
+    top: 80%;
+  }
+  
+  100% {
+    top: 20%;
+  }
+}
+
+#newGameButton {
+  margin-top: 10px;
+}
+
+.show {
+  display: block;
+}
+
+.hide {
+  display: none;
+}

@@ -6,186 +6,22 @@
     <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1" />
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧞</text></svg>"/>
     
-    <!-- TODO Do we even need Supastate realistically? Note currently on a Ctrl+Shift+R hard refresh the limbs generate outside the map box -->
-    <script src="js/supastate.js"></script>
-    <script src="js/mersenne.js"></script>
-    <script src="js/detect-transparency-image.js"></script>
+    <link rel="stylesheet" href="./css/main.css"/>
     
-    <!-- All items/* images are credit to Kenney @ www.kenney.nl Thanks for a great pack-->
+    <script src="./js/neodrag.js"></script>
+    <script src="./js/mersenne.js"></script>
     
-    <style>
-      html, body {
-        padding: 0;
-        margin: 0;
-      }
-      
-      body {
-        overflow: scroll;
-        background-color: black;
-        color: #DEDEDE;
-      }
-      
-      body, input, button {
-        font-family: monospace;
-      }
-      
-      button {
-        height: 40px;
-        padding: 0 10px 0 10px;
-        border: 3px dashed pink;
-        border-radius: 10px;
-        background-color: darkmagenta;
-        box-shadow: 0 0 10px red;
-        color: white;
-        text-shadow: 0 0 5px black;
-        transition: background-color 500ms;
-        cursor: grab;
-      }
-      
-      button:hover {
-        background-color: magenta;
-        border-style: dotted;
-      }
-      
-      .centered {
-        text-align: center;
-        margin-left: auto;
-        margin-right: auto;
-      }
-      
-      #map {
-        visibility: hidden; /* Will show after start countdown */
-        position: relative;
-        background-color: darkslateblue;
-        border: 5px groove goldenrod;
-        margin-left: auto;
-        margin-right: auto;
-        margin-bottom: 10px;
-      }
-      
-      #configOuter {
-        cursor: pointer;
-        margin: 10px;
-      }
-      
-      #configWrap {
-        margin: 20px;
-      }
-      
-      #infoWrap {
-        font-size: smaller;
-        text-shadow: 0 0 3px black;
-      }
-      
-      .piece {
-        position: absolute;
-        user-select: none;
-        opacity: 0.9;
-        border: 1px solid transparent;
-        border-radius: 5px;
-        /* Intentionally don't use a different cursor as groin is hard to see otherwise: cursor: crosshair; */
-      }
-      
-      .piece:hover {
-        /* Important to override color hue rotate inline on each piece */
-        filter: drop-shadow(cornflowerblue 0 0 30px) !important;
-        border: 1px outset cornflowerblue;
-      }
-      
-      .doll {
-        position: relative;
-        width: 256px;
-        height: 354px;
-      }
-      
-      .dollDrop {
-        filter: brightness(0);
-        user-select: none;
-        position: absolute;
-      }
-      
-      #scoreWrap {
-        width: 100%;
-        padding-left: 10px;
-        padding-right: 10px;
-      }
-      
-      #scoreCounter {
-        text-align: left;
-        font-size: 2.5em;
-        color: limegreen;
-        text-shadow: 0 0 10px limegreen;
-      }
-      
-      #scoreMessage {
-        font-size: 2em;
-        margin-left: 10px;
-      }
-      
-      .scoreMessageBlue {
-        color: cornflowerblue;
-        text-shadow: 0 0 10px cornflowerblue;
-      }
-      
-      .scoreMessageRed {
-        color: red;
-        text-shadow: 0 0 10px red;
-      }
-      
-      #overlayMessageWrap {
-        background-color: black;
-        border-radius: 20px;
-        border: 1px solid gray;
-        box-shadow: 10px 10px 5px navy;
-        opacity: 0.9;
-        padding: 40px;
-        z-index: 9999;
-        position: absolute;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        font-size: xx-large;
-        animation: dvd-bounce 10s infinite;
-        transition: top 10s linear, left 10s linear;
-      }
-      
-      #overlayMessageWrap:hover {
-        animation-play-state: paused;
-      }
-      
-      @keyframes dvd-bounce {
-        0% {
-          top: 20%;
-        }
-        
-        50% {
-          top: 80%;
-        }
-        
-        100% {
-          top: 20%;
-        }
-      }
-      
-      #newGameButton {
-        margin-top: 10px;
-      }
-      
-      .show {
-        display: block;
-      }
-      
-      .hide {
-        display: none;
-      }
-    </style>
+    <!-- All items/* images are credit to Kenney @ www.kenney.nl specifically https://kenney.nl/assets/generic-items - thanks for a great pack-->
+    <script src="./js/items.js" defer></script>
+    <script src="./js/util.js"></script>
   </head>
   <body>
     <div id="overlayMessageWrap">
       <div id="overlayMessage"></div>
       <div id="newGameButton" class="centered hide">
         <!-- TODO Add a "Submit Score" checkbox, that does ntfy.sh, but ONLY on win -->
-        <button onclick="removeUrlParam('seed', true);" title="New game with a new seed">New</button>
-        <button onclick="removeUrlParam(null, true);" title="Restart the game with the same seed">Restart</button>
+        <button onclick="util.removeUrlParam('seed', true);" title="New game with a new seed">New</button>
+        <button onclick="util.removeUrlParam(null, true);" title="Restart the game with the same seed">Restart</button>
       </div>
     </div>
     
@@ -212,8 +48,8 @@
           <span id="scoreMessage" class="scoreMessageRed"></span>
         </td>
         <td id="gameButtons" style="text-align: right;">
-          <button onclick="removeUrlParam('seed', true);" title="New game with a new seed">New</button>
-          <button onclick="removeUrlParam(null, true);" title="Restart the game with the same seed">Restart</button>
+          <button onclick="util.removeUrlParam('seed', true);" title="New game with a new seed">New</button>
+          <button onclick="util.removeUrlParam(null, true);" title="Restart the game with the same seed">Restart</button>
           <button onclick="stopGame(true);" title="Quit, like you do for everything in your life">Give Up</button>
         </td>
       </tr>
@@ -221,23 +57,20 @@
     
     <div id="map">
       <div class="centered doll">
-        <img id="dollHead" src="blueman/doll-head.png" draggable="false" class="dollDrop" style="top: 0; left: 128px;"></img>
-        <img id="dollArmPort" src="blueman/doll-arm-port.png" draggable="false" class="dollDrop" style="top: 85px; left: 30px;"></img>
-        <img id="dollTorso" src="blueman/doll-torso.png" draggable="false" class="dollDrop" style="top: 76px; left: 117px;"></img>
-        <img id="dollArmStarboard" src="blueman/doll-arm-starboard.png" draggable="false" class="dollDrop" style="top: 85px; left: 199px;"></img>
-        <img id="dollLegPort" src="blueman/doll-leg-port.png" draggable="false" class="dollDrop" style="top: 206px; left: 90px;"></img>
-        <img id="dollGroin" src="blueman/doll-groin.png" draggable="false" class="dollDrop" style="top: 206px; left: 153px;"></img>
-        <img id="dollLegStarboard" src="blueman/doll-leg-starboard.png" draggable="false" class="dollDrop" style="top: 206px; left: 163px;"></img>
+        <img id="dollHead" src="./blueman/doll-head.png" draggable="false" class="dollDrop" style="top: 0; left: 128px;"></img>
+        <img id="dollArmPort" src="./blueman/doll-arm-port.png" draggable="false" class="dollDrop" style="top: 85px; left: 30px;"></img>
+        <img id="dollTorso" src="./blueman/doll-torso.png" draggable="false" class="dollDrop" style="top: 76px; left: 117px;"></img>
+        <img id="dollArmStarboard" src="./blueman/doll-arm-starboard.png" draggable="false" class="dollDrop" style="top: 85px; left: 199px;"></img>
+        <img id="dollLegPort" src="./blueman/doll-leg-port.png" draggable="false" class="dollDrop" style="top: 206px; left: 90px;"></img>
+        <img id="dollGroin" src="./blueman/doll-groin.png" draggable="false" class="dollDrop" style="top: 206px; left: 153px;"></img>
+        <img id="dollLegStarboard" src="./blueman/doll-leg-starboard.png" draggable="false" class="dollDrop" style="top: 206px; left: 163px;"></img>
       </div>
       <div id="infoWrap" class="centered">
         &nbsp;
       </div>
     </div>
     
-    <!-- If we remove Supastate, can also remove type="module" -->
-    <script type="module">
-      import { classList, effect, reactive, text } from 'https://cdn.jsdelivr.net/npm/supastate/dist/index.mjs';
-      
+    <script>
       const queryParams = new URLSearchParams(window.location.search);
       
       const DEBUG = queryParams.get("debug") ?? false;
@@ -246,33 +79,35 @@
       const BLUEMAN_EXT = ".png";
       
       // Add our seed to the URL
-      addUrlParam("seed", BLUEMAN_SEED);
+      util.addUrlParam("seed", BLUEMAN_SEED);
       
       const rand = new MersenneTwister(BLUEMAN_SEED);
       
-      let paused = false; // If we lose visibility pause our timer
-      let currentZIndex = 1; // Layer last dragged object to the top, so keep a running tally
-      // TODO Decide if we want a countdown OR just start the timer on the first drag (cleaner)
-      let currentCountdown = 3; // Start countdown
-      let scoreInterval = null; // setInterval for score countdown
-      
-      const state = reactive({
+      const state = {
         mapWidth: 1000,
         mapHeight: 700,
+        paused: false, // If we lose visibility pause our timer
+        currentZIndex: 1, // Layer last dragged object to the top, so keep a running tally
+        // TODO Decide if we want a countdown OR just start the timer on the first drag (cleaner)
+        currentCountdown: 3, // Start countdown
+        scoreInterval: null, // setInterval for score countdown
         score: {
           total: 0,
           dropPenalty: 0,
           dropWorst: 0,
           dropBest: null
         },
-      });
-      const ele = {
+      };
+      const elements = {
         map: document.getElementById("map"),
         mapWidthIn: document.getElementById("mapWidthIn"),
         mapHeightIn: document.getElementById("mapHeightIn"),
         doll: document.getElementById("doll"),
         overlayMessageWrap: document.getElementById("overlayMessageWrap"),
+        overlayMessage: document.getElementById("overlayMessage"),
+        infoWrap: document.getElementById("infoWrap"),
         scoreCounter: document.getElementById("scoreCounter"),
+        scoreMessage: document.getElementById("scoreMessage"),
       };
       // Track both the image names, and true/false if they have been detected as dropped
       // This is used for determining winning
@@ -285,42 +120,8 @@
         "doll-leg-starboard": false
       };
       // Groin is sometimes optional
-      if (getRandomInt(0, 100) <= 30) {
+      if (util.getRandomInt(0, 100) <= 30) {
         dollPieces["doll-groin"] = false;
-      }
-      
-      function getRandomInt(min, max) {
-          return Math.floor(rand.random() * (max - min + 1)) + min;
-      }
-
-      function getRandomFloat(min, max, allDecimalPlaces) {
-          if (!allDecimalPlaces) {
-              return parseFloat(((rand.random() * (max - min)) + min).toFixed(3));
-          }
-          else {
-              return (rand.random() * (max - min)) + min;
-          }
-      }
-
-      function getRandomBoolean() {
-          return rand.random() > 0.5;
-      }
-      
-      function getRandomColor() {
-        const letters = '0123456789ABCDEF';
-        let color = '#';
-        for (let i = 0; i < 6; i++) {
-          color += letters[Math.floor(rand.random() * 16)];
-        }
-        
-        return color;
-      }
-      
-      function getRandomRGBA() {
-        return `rgba(${getRandomInt(0, 255)},
-                     ${getRandomInt(0, 255)},
-                     ${getRandomInt(0, 255)},
-                     ${getRandomFloat(0.5, 0.7)})`
       }
       
       function handleDrop(dragEvent) {
@@ -345,11 +146,9 @@
               const modifier = Math.abs(deltaX) + Math.abs(deltaY);
               
               if (modifier !== 0) {
-                text("#infoWrap", () => `Off By: X=${deltaX}, Y=${deltaY}`);
+                elements.infoWrap.textContent = `Off By: X=${deltaX}, Y=${deltaY}`;
               }
-              
-              const newMessage = modifier === 0 ? `Perfect` : `+${modifier}s`;
-              text("#scoreMessage", () => newMessage);
+              elements.scoreMessage.textContent = modifier === 0 ? `Perfect` : `+${modifier}s`;
               
               state.score.total += modifier;
               state.score.dropPenalty += modifier;
@@ -370,8 +169,8 @@
       }
       
       function createBodyPiece(imgPath) {
-        const minX = ele.map.offsetLeft;
-        const minY = ele.map.offsetTop;
+        const minX = elements.map.offsetLeft;
+        const minY = elements.map.offsetTop;
         const maxX = minX + state.mapWidth;
         const maxY = minY + state.mapHeight;
         
@@ -379,9 +178,9 @@
         newPiece.src = imgPath;
         newPiece.draggable = false;
         newPiece.className = "piece clickable-transparency";
-        newPiece.style.filter = `hue-rotate(${getRandomInt(10, 350)}deg)`;
-        newPiece.style.left = getRandomInt(0, state.mapWidth) + "px";
-        newPiece.style.top = getRandomInt(0, state.mapHeight) + "px";
+        newPiece.style.filter = `hue-rotate(${util.getRandomInt(10, 350)}deg)`;
+        newPiece.style.left = util.getRandomInt(0, state.mapWidth) + "px";
+        newPiece.style.top = util.getRandomInt(0, state.mapHeight) + "px";
         
         // Bound the piece to the map
         if (parseInt(newPiece.style.left) + newPiece.width > state.mapWidth) {
@@ -394,9 +193,9 @@
         new NeoDrag.Draggable(newPiece, {
           bounds: "parent",
           onDragStart: (data) => {
-            currentZIndex++;
-            data.currentNode.style.zIndex = currentZIndex;
-            text("#infoWrap", () => "");
+            state.currentZIndex++;
+            data.currentNode.style.zIndex = state.currentZIndex;
+            elements.infoWrap.textContent = "";
           },
           // onDrag: (data) => {
           //   console.log(new Date() + ": DRAGGING", data);
@@ -407,58 +206,52 @@
           },
         });
         
-        ele.map.appendChild(newPiece);
+        elements.map.appendChild(newPiece);
       }
       
       function startGame() {
-        ele.map.style.visibility = "visible";
-        ele.overlayMessageWrap.style.visibility = "hidden";
+        elements.map.style.visibility = "visible";
+        elements.overlayMessageWrap.style.visibility = "hidden";
         
-        scoreInterval = setInterval(() => {
-          if (!paused) {
+        state.scoreInterval = setInterval(() => {
+          if (!state.paused) {
             state.score.total += 0.02;
-            ele.scoreCounter.textContent = state.score.total.toFixed(2);
+            elements.scoreCounter.textContent = state.score.total.toFixed(2);
           }
         }, 20);
       }
       
       function stopGame(gaveUp) {
-        if (scoreInterval) {
-          clearInterval(scoreInterval);
+        if (state.scoreInterval) {
+          clearInterval(state.scoreInterval);
         }
         
-        classList("#scoreMessage", () => ({
+        util.changeClassList("scoreMessage", {
           scoreMessageBlue: true,
           scoreMessageRed: false
-        }));
-        text("#scoreMessage", () => `(${state.score.dropPenalty} was penalty [${state.score.dropBest ?? 0} best, ${state.score.dropWorst} worst], ${(state.score.total - state.score.dropPenalty).toFixed(2)} was draggin')`);
-        text("#infoWrap", () => "");
+        });
+        elements.scoreMessage.textContent =
+          `(${state.score.dropPenalty} was penalty [${state.score.dropBest ?? 0} best, ${state.score.dropWorst} worst], ${(state.score.total - state.score.dropPenalty).toFixed(2)} was draggin')`;
+        elements.infoWrap.textContent = "";
         
         // After the interval stops we update the page text
-        ele.overlayMessageWrap.style.visibility = "visible";
-        ele.map.style.pointerEvents = "none";
+        elements.overlayMessageWrap.style.visibility = "visible";
+        elements.map.style.pointerEvents = "none";
         setTimeout(() => {
+          const endMessage = gaveUp ?
+            "You quit!\n" + getLoseMessage() :
+            "You won!\n" + getWinMessage();
           
-          text("#overlayMessage", () => {
-            let message = "You won!\n" + getWinMessage();
-            
-            if (gaveUp) {
-              message = "You quit!\n" + getLoseMessage();
-            }
-            
-            classList("#gameButtons", () => ({
-              hide: true
-            }));
-            classList("#newGameButton", () => ({
-              show: true,
-              hide: false
-            }));
-            
-            return message;
+          elements.overlayMessage.textContent = endMessage;
+          util.changeClassList("gameButtons", {
+            hide: true
+          });
+          util.changeClassList("newGameButton", {
+            show: true,
+            hide: false
           });
         });
       }
-      window.stopGame = stopGame; // Only needed when type="module" for Supastate
       
       function getWinMessage() {
         // TODO Win messages randomly
@@ -470,46 +263,29 @@
         return "What a loser";
       }
       
-      function addUrlParam(paramName, paramValue) {
-        const currentUrl = new URL(window.location.href);
-        currentUrl.searchParams.set(paramName, paramValue);
-        // Arguably could be replaceState, but maybe it's nice to go back in history to different seeds we liked?
-        window.history.pushState({}, "", currentUrl);
-      }
-      
-      function removeUrlParam(paramName, reloadAfter) {
-        if (paramName) {
-          const currentUrl = new URL(window.location.href);
-          currentUrl.searchParams.delete(paramName);
-          window.history.pushState({}, "", currentUrl);
-        }
-        
-        if (reloadAfter) {
-          window.location.reload();
-        }
-      }
-      window.removeUrlParam = removeUrlParam;
-      
       function init() {
         document.addEventListener("visibilitychange", (event) => {
-          paused = !paused;
+          state.paused = !state.paused;
         });
         
-        ele.map.style.background = `radial-gradient(circle, ${getRandomRGBA()} 0%, ${getRandomRGBA()} 100%)`;
-        ele.map.style.borderColor = getRandomColor();
+        elements.map.style.background = `radial-gradient(circle, ${util.getRandomRGBA()} 0%, ${util.getRandomRGBA()} 100%)`;
+        elements.map.style.borderColor = util.getRandomColor();
         
-        ele.mapWidthIn.value = state.mapWidth;
-        ele.mapHeightIn.value = state.mapHeight;
-        ele.mapWidthIn.addEventListener("input", e => { state.mapWidth = e.target.value });
-        ele.mapHeightIn.addEventListener("input", e => { state.mapHeight = e.target.value });
-        
+        // TODO Need to move our config to a separate screen, and have the map dimensions apply on submit only, before we gen body locations
         const updateMapDimensions = () => {
-          ele.map.style.width = state.mapWidth + "px";
-          ele.map.style.height = state.mapHeight + "px";
+          elements.map.style.width = state.mapWidth + "px";
+          elements.map.style.height = state.mapHeight + "px";
         };
         updateMapDimensions();
         
-        effect(() => {
+        elements.mapWidthIn.value = state.mapWidth;
+        elements.mapHeightIn.value = state.mapHeight;
+        elements.mapWidthIn.addEventListener("input", e => {
+          state.mapWidth = e.target.value;
+          updateMapDimensions();
+        });
+        elements.mapHeightIn.addEventListener("input", e => {
+          state.mapHeight = e.target.value;
           updateMapDimensions();
         });
         
@@ -518,16 +294,19 @@
           createBodyPiece(`${BLUEMAN_DIR}${piece}${BLUEMAN_EXT}`);
         });
         
+        // Setup items next
+        items.placeItems();
+        
         // Start the countdown or just rip 'er
         if (DEBUG) {
           startGame();
         }
         else {
-          text("#overlayMessage", () => currentCountdown);
+          elements.overlayMessage.textContent = state.currentCountdown;
           const countdownInterval = setInterval(() => {
-            currentCountdown--;
+            state.currentCountdown--;
             
-            if (currentCountdown <= 0) {
+            if (state.currentCountdown <= 0) {
               startGame();
               
               if (countdownInterval) {
@@ -535,7 +314,7 @@
               }
             }
             else {
-              text("#overlayMessage", () => currentCountdown);
+              elements.overlayMessage.textContent = state.currentCountdown;
             }
           }, 999);
         }
@@ -543,9 +322,6 @@
       
       addEventListener("DOMContentLoaded", (event) => {
         init();
-        // TODO Determine if we want the PNG transparency detection. If we don't, remove the import and script too
-        // Downside is due to CORS for off-screen canvas/images we can't run as file:// and need to host
-        // setupDetectTransparencyImage();
       });
     </script>
   </body>

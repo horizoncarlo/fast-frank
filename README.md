@@ -33,6 +33,8 @@ Supastate https://www.npmjs.com/package/supastate for light state
   - Have this as an initial screen before the map, then you press "go". Overlay the countdown over the map in that case. Or just remove the countdown, and have it start on first drag
 - TODO Consider additional pieces, like the groin, maybe joints are split? Could potentially be random?
   - Unlikely to be honest, would prefer to spend time on making the game more interesting in other ways
+- TODO What about a "mask" you get from https://kenney.nl/assets/animal-pack-remastered over the head that...SOMEHOW...drastically changes the game?
+  - Not very realistic on our timeline
 
 # Positive/Negative Effects and Items
 Negative Effects:
