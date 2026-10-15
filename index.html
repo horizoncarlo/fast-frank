@@ -77,6 +77,7 @@
         position: absolute;
         user-select: none;
         opacity: 0.9;
+        cursor: move;
       }
       
       .piece:hover {
@@ -96,24 +97,21 @@
         position: absolute;
       }
       
-      #scoreWrap, #scoreBar {
-        height: 10px;
-      }
-      
       #scoreWrap {
-        background-color: black;
-        width: 100%;
+        margin-left: 10px;
+        text-align: left;
+        font-size: 30px;
       }
       
-      #scoreBar {
-        font-size: 10px;
-        color: black;
-        text-shadow: 0 0 2px white;
-        transition: width linear 999ms;
-        width: 0%;
-        background: #2A7B9B;
-        background: linear-gradient(90deg,rgba(237, 221, 83, 1) 0%, rgba(87, 199, 133, 1) 50%, rgba(42, 123, 155, 1) 100%);
-        border-right: 1px solid yellow;
+      #scoreCounter {
+        color: limegreen;
+        text-shadow: 0 0 10px limegreen;
+      }
+      
+      #scoreMessage {
+        margin-left: 10px;
+        color: red;
+        text-shadow: 0 0 10px red;
       }
       
       #overlayMessageWrap {
@@ -160,15 +158,10 @@
     </style>
   </head>
   <body>
-    <div id="scoreWrap">
-      <div id="scoreBar">
-        &nbsp;
-      </div>
-    </div>
-    
     <div id="overlayMessageWrap">
       <div id="overlayMessage"></div>
       <div id="newGameButton" class="centered hide">
+        <!-- TODO Add a "Submit Score" checkbox, that does ntfy.sh -->
         <button onclick="window.location.reload();">Restart Game</button>
       </div>
     </div>
@@ -187,6 +180,11 @@
         </label>
       </div>
     </details>
+    
+    <div id="scoreWrap">
+      <span id="scoreCounter">&nbsp;</span>
+      <span id="scoreMessage"></span>
+    </div>
     
     <div id="map">
       <div class="centered doll">
@@ -209,7 +207,6 @@
       const DEBUG = new URLSearchParams(window.location.search).get("debug") ?? false;
       const BLUEMAN_DIR = "blueman/";
       const BLUEMAN_EXT = ".png";
-      const START_SCORE = DEBUG ? 2 : 30;
       
       let paused = false;
       let currentZIndex = 1;
@@ -219,7 +216,8 @@
       const state = reactive({
         mapWidth: 1000,
         mapHeight: 700,
-        score: START_SCORE
+        score: 0,
+        scoreMessages: []
       });
       const ele = {
         map: document.getElementById("map"),
@@ -227,7 +225,7 @@
         mapHeightIn: document.getElementById("mapHeightIn"),
         doll: document.getElementById("doll"),
         overlayMessageWrap: document.getElementById("overlayMessageWrap"),
-        scoreBar: document.getElementById("scoreBar"),
+        scoreCounter: document.getElementById("scoreCounter"),
       };
       // Track both the image names, and true/false if they have been detected as dropped
       // This is used for determining winning
@@ -292,7 +290,14 @@
             text("#infoWrap", () => `Off By: X=${deltaX}, Y=${deltaY}`);
             
             // Penalize based on how far off the drop was
-            state.score -= Math.abs(deltaX) + Math.abs(deltaY);
+            const modifier = Math.abs(deltaX) + Math.abs(deltaY);
+            const newMessage = `+${modifier}s`;
+            state.scoreMessages.push(newMessage);
+            text("#scoreMessage", () => state.scoreMessages.join(", "));
+            setTimeout(() => {
+              state.scoreMessages.shift();
+            }, 3000);
+            state.score += modifier;
             
             // Track that we dropped this piece, if it matches, and then check win condition
             const dragKey = getKeyFromSrc(dragEvent.currentNode.src);
@@ -300,8 +305,11 @@
             if (dragKey === dropKey && dollPieces.hasOwnProperty(dragKey)) {
               dollPieces[dragKey] = true;
               
+              dragEvent.currentNode.style.pointerEvents = "none"; // Disable further interaction
+              dragEvent.currentNode.style.filter = "none";
+              
               if (Object.values(dollPieces).every(val => val === true)) {
-                stopGame(true);
+                stopGame();
               }
             }
           }
@@ -353,33 +361,33 @@
         ele.map.style.visibility = "visible";
         ele.overlayMessageWrap.style.visibility = "hidden";
         
-        scoreBar.style.width = "100%";
         scoreInterval = setInterval(() => {
           if (!paused) {
-            state.score--;
-            text("#scoreBar", () => state.score);
+            state.score += 0.02;
             
-            scoreBar.style.width = parseInt(state.score / START_SCORE * 100) + "%";
+            ele.scoreCounter.textContent = state.score.toFixed(2);
           }
-        }, 1000);
+        }, 20);
       }
       
-      function stopGame(didWeWinSir) {
+      function stopGame() {
         if (scoreInterval) {
           clearInterval(scoreInterval);
         }
         
         ele.overlayMessageWrap.style.visibility = "visible";
         
+        // Clear any score modifier messages
+        state.scoreMessages = [];
+        text("#scoreMessage", () => "");
+        text("#infoWrap", () => "");
+        
         // After the interval stops we update the page text
         setTimeout(() => {
           ele.map.style.pointerEvents = "none";
           
-          state.score = null;
-          text("#scoreBar", () => "");
           text("#overlayMessage", () => {
-            let message = didWeWinSir ? "You won!\n" : "You lost!\n";
-            message += didWeWinSir ? getWinMessage() : getLoseMessage();
+            const message = "You won!\n" + getWinMessage();
             
             classList("#newGameButton", () => ({
               show: true,
@@ -394,11 +402,6 @@
       function getWinMessage() {
         // TODO Win messages randomly
         return "Everyone is proud of you";
-      }
-      
-      function getLoseMessage() {
-        // TODO Lose messages randomly
-        return "lol rekt";
       }
       
       function init() {
@@ -422,14 +425,6 @@
         
         effect(() => {
           updateMapDimensions();
-        });
-        
-        effect(() => {
-          // Little -1 so the CSS transition can finish
-          if (typeof state.score === 'number' &&
-              state.score <= -1) {
-            stopGame();
-          }
         });
         
         // Setup the pieces of the blue man across the map
