@@ -8,6 +8,7 @@
     
     <!-- TODO Do we even need Supastate realistically? Note currently on a Ctrl+Shift+R hard refresh the limbs generate outside the map box -->
     <script src="js/supastate.js"></script>
+    <script src="js/mersenne.js"></script>
     <script src="js/detect-transparency-image.js"></script>
     
     <style>
@@ -27,7 +28,8 @@
       }
       
       button {
-        padding: 10px;
+        height: 40px;
+        padding: 0 10px 0 10px;
         border: 3px dashed pink;
         border-radius: 10px;
         background-color: darkmagenta;
@@ -77,12 +79,15 @@
         position: absolute;
         user-select: none;
         opacity: 0.9;
-        cursor: move;
+        border: 1px solid transparent;
+        border-radius: 5px;
+        /* Intentionally don't use a different cursor as groin is hard to see otherwise: cursor: crosshair; */
       }
       
       .piece:hover {
         /* Important to override color hue rotate inline on each piece */
         filter: drop-shadow(cornflowerblue 0 0 30px) !important;
+        border: 1px outset cornflowerblue;
       }
       
       .doll {
@@ -98,18 +103,29 @@
       }
       
       #scoreWrap {
-        margin-left: 10px;
-        text-align: left;
-        font-size: 30px;
+        width: 100%;
+        padding-left: 10px;
+        padding-right: 10px;
       }
       
       #scoreCounter {
+        text-align: left;
+        font-size: 2.5em;
         color: limegreen;
         text-shadow: 0 0 10px limegreen;
       }
       
       #scoreMessage {
+        font-size: 2em;
         margin-left: 10px;
+      }
+      
+      .scoreMessageBlue {
+        color: cornflowerblue;
+        text-shadow: 0 0 10px cornflowerblue;
+      }
+      
+      .scoreMessageRed {
         color: red;
         text-shadow: 0 0 10px red;
       }
@@ -128,6 +144,10 @@
         font-size: xx-large;
         animation: dvd-bounce 10s infinite;
         transition: top 10s linear, left 10s linear;
+      }
+      
+      #overlayMessageWrap:hover {
+        animation-play-state: paused;
       }
       
       @keyframes dvd-bounce {
@@ -161,8 +181,9 @@
     <div id="overlayMessageWrap">
       <div id="overlayMessage"></div>
       <div id="newGameButton" class="centered hide">
-        <!-- TODO Add a "Submit Score" checkbox, that does ntfy.sh -->
-        <button onclick="window.location.reload();">Restart Game</button>
+        <!-- TODO Add a "Submit Score" checkbox, that does ntfy.sh, but ONLY on win -->
+        <button onclick="removeUrlParam('seed', true);" title="New game with a new seed">New</button>
+        <button onclick="removeUrlParam(null, true);" title="Restart the game with the same seed">Restart</button>
       </div>
     </div>
     
@@ -181,10 +202,20 @@
       </div>
     </details>
     
-    <div id="scoreWrap">
-      <span id="scoreCounter">&nbsp;</span>
-      <span id="scoreMessage"></span>
-    </div>
+    <!-- Sometimes it's nice to feel like 1990 an use table for layout -->
+    <table id="scoreWrap">
+      <tr>
+        <td style="text-align: left; height: 45px;">
+          <span id="scoreCounter">&nbsp;</span>
+          <span id="scoreMessage" class="scoreMessageRed"></span>
+        </td>
+        <td id="gameButtons" style="text-align: right;">
+          <button onclick="removeUrlParam('seed', true);" title="New game with a new seed">New</button>
+          <button onclick="removeUrlParam(null, true);" title="Restart the game with the same seed">Restart</button>
+          <button onclick="stopGame(true);" title="Quit, like you do for everything in your life">Give Up</button>
+        </td>
+      </tr>
+    </table>
     
     <div id="map">
       <div class="centered doll">
@@ -201,23 +232,37 @@
       </div>
     </div>
     
+    <!-- If we remove Supastate, can also remove type="module" -->
     <script type="module">
       import { classList, effect, reactive, text } from 'https://cdn.jsdelivr.net/npm/supastate/dist/index.mjs';
       
-      const DEBUG = new URLSearchParams(window.location.search).get("debug") ?? false;
+      const queryParams = new URLSearchParams(window.location.search);
+      
+      const DEBUG = queryParams.get("debug") ?? false;
+      const BLUEMAN_SEED = queryParams.get("seed") ?? new Date().getTime();
       const BLUEMAN_DIR = "blueman/";
       const BLUEMAN_EXT = ".png";
       
-      let paused = false;
-      let currentZIndex = 1;
-      let currentCountdown = 3;
+      // Add our seed to the URL
+      addUrlParam("seed", BLUEMAN_SEED);
+      
+      const rand = new MersenneTwister(BLUEMAN_SEED);
+      
+      let paused = false; // If we lose visibility pause our timer
+      let currentZIndex = 1; // Layer last dragged object to the top, so keep a running tally
+      // TODO Decide if we want a countdown OR just start the timer on the first drag (cleaner)
+      let currentCountdown = 3; // Start countdown
       let scoreInterval = null; // setInterval for score countdown
       
       const state = reactive({
         mapWidth: 1000,
         mapHeight: 700,
-        score: 0,
-        scoreMessages: []
+        score: {
+          total: 0,
+          dropPenalty: 0,
+          dropWorst: 0,
+          dropBest: null
+        },
       });
       const ele = {
         map: document.getElementById("map"),
@@ -235,32 +280,35 @@
         "doll-torso": false,
         "doll-arm-starboard": false,
         "doll-leg-port": false,
-        "doll-groin": false,
         "doll-leg-starboard": false
       };
+      // Groin is sometimes optional
+      if (getRandomInt(0, 100) <= 30) {
+        dollPieces["doll-groin"] = false;
+      }
       
       function getRandomInt(min, max) {
-          return Math.floor(Math.random() * (max - min + 1)) + min;
+          return Math.floor(rand.random() * (max - min + 1)) + min;
       }
 
       function getRandomFloat(min, max, allDecimalPlaces) {
           if (!allDecimalPlaces) {
-              return parseFloat(((Math.random() * (max - min)) + min).toFixed(3));
+              return parseFloat(((rand.random() * (max - min)) + min).toFixed(3));
           }
           else {
-              return (Math.random() * (max - min)) + min;
+              return (rand.random() * (max - min)) + min;
           }
       }
 
       function getRandomBoolean() {
-          return Math.random() > 0.5;
+          return rand.random() > 0.5;
       }
       
       function getRandomColor() {
         const letters = '0123456789ABCDEF';
         let color = '#';
         for (let i = 0; i < 6; i++) {
-          color += letters[Math.floor(Math.random() * 16)];
+          color += letters[Math.floor(rand.random() * 16)];
         }
         
         return color;
@@ -287,22 +335,25 @@
             const deltaX = dragRect.x - dropRect.x;
             const deltaY = dragRect.y - dropRect.y;
             
-            text("#infoWrap", () => `Off By: X=${deltaX}, Y=${deltaY}`);
-            
-            // Penalize based on how far off the drop was
-            const modifier = Math.abs(deltaX) + Math.abs(deltaY);
-            const newMessage = `+${modifier}s`;
-            state.scoreMessages.push(newMessage);
-            text("#scoreMessage", () => state.scoreMessages.join(", "));
-            setTimeout(() => {
-              state.scoreMessages.shift();
-            }, 3000);
-            state.score += modifier;
-            
             // Track that we dropped this piece, if it matches, and then check win condition
             const dragKey = getKeyFromSrc(dragEvent.currentNode.src);
             const dropKey = getKeyFromSrc(dropped.src);
             if (dragKey === dropKey && dollPieces.hasOwnProperty(dragKey)) {
+              // Penalize based on how far off the drop was
+              const modifier = Math.abs(deltaX) + Math.abs(deltaY);
+              
+              if (modifier !== 0) {
+                text("#infoWrap", () => `Off By: X=${deltaX}, Y=${deltaY}`);
+              }
+              
+              const newMessage = modifier === 0 ? `Perfect` : `+${modifier}s`;
+              text("#scoreMessage", () => newMessage);
+              
+              state.score.total += modifier;
+              state.score.dropPenalty += modifier;
+              state.score.dropWorst = Math.max(state.score.dropWorst, modifier);
+              state.score.dropBest = Math.min(state.score.dropBest ?? Infinity, modifier);
+              
               dollPieces[dragKey] = true;
               
               dragEvent.currentNode.style.pointerEvents = "none"; // Disable further interaction
@@ -326,7 +377,7 @@
         newPiece.src = imgPath;
         newPiece.draggable = false;
         newPiece.className = "piece clickable-transparency";
-        newPiece.style.filter = `hue-rotate(${getRandomInt(0, 360)}deg)`;
+        newPiece.style.filter = `hue-rotate(${getRandomInt(10, 350)}deg)`;
         newPiece.style.left = getRandomInt(0, state.mapWidth) + "px";
         newPiece.style.top = getRandomInt(0, state.mapHeight) + "px";
         
@@ -363,32 +414,39 @@
         
         scoreInterval = setInterval(() => {
           if (!paused) {
-            state.score += 0.02;
-            
-            ele.scoreCounter.textContent = state.score.toFixed(2);
+            state.score.total += 0.02;
+            ele.scoreCounter.textContent = state.score.total.toFixed(2);
           }
         }, 20);
       }
       
-      function stopGame() {
+      function stopGame(gaveUp) {
         if (scoreInterval) {
           clearInterval(scoreInterval);
         }
         
-        ele.overlayMessageWrap.style.visibility = "visible";
-        
-        // Clear any score modifier messages
-        state.scoreMessages = [];
-        text("#scoreMessage", () => "");
+        classList("#scoreMessage", () => ({
+          scoreMessageBlue: true,
+          scoreMessageRed: false
+        }));
+        text("#scoreMessage", () => `(${state.score.dropPenalty} was penalty [${state.score.dropBest ?? 0} best, ${state.score.dropWorst} worst], ${(state.score.total - state.score.dropPenalty).toFixed(2)} was draggin')`);
         text("#infoWrap", () => "");
         
         // After the interval stops we update the page text
+        ele.overlayMessageWrap.style.visibility = "visible";
+        ele.map.style.pointerEvents = "none";
         setTimeout(() => {
-          ele.map.style.pointerEvents = "none";
           
           text("#overlayMessage", () => {
-            const message = "You won!\n" + getWinMessage();
+            let message = "You won!\n" + getWinMessage();
             
+            if (gaveUp) {
+              message = "You quit!\n" + getLoseMessage();
+            }
+            
+            classList("#gameButtons", () => ({
+              hide: true
+            }));
             classList("#newGameButton", () => ({
               show: true,
               hide: false
@@ -398,11 +456,37 @@
           });
         });
       }
+      window.stopGame = stopGame; // Only needed when type="module" for Supastate
       
       function getWinMessage() {
         // TODO Win messages randomly
         return "Everyone is proud of you";
       }
+      
+      function getLoseMessage() {
+        // TODO Loss messages randomly
+        return "What a loser";
+      }
+      
+      function addUrlParam(paramName, paramValue) {
+        const currentUrl = new URL(window.location.href);
+        currentUrl.searchParams.set(paramName, paramValue);
+        // Arguably could be replaceState, but maybe it's nice to go back in history to different seeds we liked?
+        window.history.pushState({}, "", currentUrl);
+      }
+      
+      function removeUrlParam(paramName, reloadAfter) {
+        if (paramName) {
+          const currentUrl = new URL(window.location.href);
+          currentUrl.searchParams.delete(paramName);
+          window.history.pushState({}, "", currentUrl);
+        }
+        
+        if (reloadAfter) {
+          window.location.reload();
+        }
+      }
+      window.removeUrlParam = removeUrlParam;
       
       function init() {
         document.addEventListener("visibilitychange", (event) => {
@@ -432,7 +516,7 @@
           createBodyPiece(`${BLUEMAN_DIR}${piece}${BLUEMAN_EXT}`);
         });
         
-        // Start the countdown
+        // Start the countdown or just rip 'er
         if (DEBUG) {
           startGame();
         }
@@ -457,10 +541,10 @@
       
       addEventListener("DOMContentLoaded", (event) => {
         init();
-        // TODO Determine if we want the PNG transparency detection
+        // TODO Determine if we want the PNG transparency detection. If we don't, remove the import and script too
         // Downside is due to CORS for off-screen canvas/images we can't run as file:// and need to host
         // setupDetectTransparencyImage();
-      });      
+      });
     </script>
   </body>
 </html>

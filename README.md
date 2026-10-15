@@ -23,12 +23,11 @@ Set max window size to be fair and consistent between monitors
 Supastate https://www.npmjs.com/package/supastate for light state
 
 # What is Left
-- TODO Random seed loading, likely from URL with params built into seed, to do double duty, such as "oct142026-1000-700" would be 1000x700 map
-  - Remember the "daily seed" concept
-- TODO For tracking score consider details like "worst offset" and "average time" (which is tracked as dragStart to successful dragEnd)
 - TODO Terrain and obstacle generation - different types, locations, etc. Moving obstacles too
   - Integrate via Drag event, check hit detection via document.elementsFromPoint
+- TODO For tracking score consider details like "worst offset" and "average time" (which is tracked as dragStart to successful dragEnd)
 - TODO Config and Setup options: Name, Background gradient 1 & 2. Store some of these in local storage as well
   - Have this as an initial screen before the map, then you press "go". Overlay the countdown over the map in that case
 - TODO Limb modifications and mutators - decoy (no-move cursor, lose points if dropped), bomb (countdown then explode, minus point, reposition), shrunken (need to spend time mousing over to grow before dragging?), rotated (q/e to rotate before dragging?), teleport (randomly jumps around screen)
+- TODO Consider additional pieces, like the groin, maybe joints are split? Could potentially be random?
 - TODO ntfy.sh on game win/loss
