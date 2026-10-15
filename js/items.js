@@ -64,9 +64,7 @@ function onHitTimeBonus(dollPiece, itemObj) {
 
 function onHitTeleportLimb(dollPiece, itemObj) {
   // This simulated click cancels the drag (which also fires onDragEnd)
-  window.dispatchEvent(
-    new PointerEvent("pointerup")
-  );
+  window.dispatchEvent(new PointerEvent("pointerup"));
   
   // After next render move the piece
   // TTODO
