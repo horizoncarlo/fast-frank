@@ -35,8 +35,7 @@
       #map {
         visibility: hidden; /* Will show after start countdown */
         position: relative;
-        background: navy;
-        /* background: radial-gradient(circle,rgba(63, 94, 251, 1) 0%, rgba(252, 70, 107, 1) 100%); */
+        background-color: darkslateblue;
         border: 5px groove goldenrod;
         margin-left: auto;
         margin-right: auto;
@@ -208,6 +207,13 @@
         return color;
       }
       
+      function getRandomRGBA() {
+        return `rgba(${getRandomInt(0, 255)},
+                     ${getRandomInt(0, 255)},
+                     ${getRandomInt(0, 255)},
+                     ${getRandomFloat(0.5, 0.7)})`
+      }
+      
       function handleDrop(dragEvent) {
         const droppedOn = document.elementsFromPoint(dragEvent.event.clientX, dragEvent.event.clientY);
         
@@ -304,7 +310,7 @@
           paused = !paused;
         });
         
-        ele.map.style.backgroundColor = getRandomColor();
+        ele.map.style.background = `radial-gradient(circle, ${getRandomRGBA()} 0%, ${getRandomRGBA()} 100%)`;
         ele.map.style.borderColor = getRandomColor();
         
         ele.mapWidthIn.value = state.mapWidth;

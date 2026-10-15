@@ -21,3 +21,14 @@ Gives us grid snapping, plus small exact drag handles (like the eyes of blue man
 Set max window size to be fair and consistent between monitors
 
 Supastate https://www.npmjs.com/package/supastate for light state
+
+# What is Left
+- TODO Way to win, on dragEnd check if all pieces are present? (latter is better)
+- TODO Move to counting UP for time, instead of a time limit
+- TODO Random seed loading, likely from URL with params built into seed, to do double duty, such as "oct142026-1000-700" would be 1000x700 map
+  - Remember the "daily seed" concept
+- TODO Terrain and obstacle generation - different types, locations, etc.
+- TODO Config and Setup options: Name, Background gradient 1 & 2. Store some of these in local storage as well
+- TODO Limb modifications and mutators - decoy, bomb, shrunken, rotated, teleport
+- TODO Random end of game messages
+- TODO ntfy.sh on game win/loss
