@@ -1,5 +1,6 @@
 # While Developing
-- Scaled original Blue Man to 25% across the board, by hand
+- Scaled original Blueman to 25% across the board, by hand
+- Scaled items/* images to 50px width as a max, by hand. Some were lower if their height was super big, like Beer
 
 # Original Notes
 **"Fast Frankenstein"**, drag limbs into preset combinations, as fast as possible. Some obstacles or setbacks are possible. Use same random seed to compete against friends
@@ -16,15 +17,14 @@ Consider each piece of the body has a chance for custom modifiers. For example, 
 
 Leverage Neodrag
 
-Gives us grid snapping, plus small exact drag handles (like the eyes of blue man) for further mutations
+Gives us grid snapping, plus small exact drag handles (like the eyes of blueman) for further mutations
 
 Set max window size to be fair and consistent between monitors
 
 Supastate https://www.npmjs.com/package/supastate for light state
 
 # What is Left
-- TTODO Scale down items/* images, then can add more to the map!
-- TTODO ntfy.sh on game win/loss
+- TODO ntfy.sh on game win/loss
 - TODO Terrain and obstacle generation - different types, locations, maybe positive effects?, etc. Moving obstacles too
   - **This is key** the idea is there are different choices and paths, there should be SOME level of strategy / difference between players on how they approach a map
 - TODO Limb modifications and mutators - bomb (countdown then explode, minus point, reposition), shrunken (need to spend time mousing over to grow before dragging?), rotated (q/e to rotate before dragging?), teleport (randomly jumps around screen)
@@ -33,6 +33,14 @@ Supastate https://www.npmjs.com/package/supastate for light state
   - Have this as an initial screen before the map, then you press "go". Overlay the countdown over the map in that case. Or just remove the countdown, and have it start on first drag
 - TODO What about a "mask" you get from https://kenney.nl/assets/animal-pack-remastered over the head that...SOMEHOW...drastically changes the game?
   - Not very realistic on our timeline
+
+# Before Demo #TTODO
+- ntfy integration
+- add gugs.dev link to README
+- another movement type shouldn't be hard, just per item and skip if we're the attacking one
+- go back to array of status messages. Clear oldest (first item) after X seconds. Add utility to add message. Add message when stuff wears off too, like current Unfrozen
+- TBD show last X scores via local storage per seed. Show only at end screen, with a timestamp for each one
+- TBD test set seeds, do letters even work?
 
 # Positive/Negative Effects and Items
 Negative Effects:

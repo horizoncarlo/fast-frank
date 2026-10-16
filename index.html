@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <title>Fast Frank - Fix the Blue Man</title>
+    <title>Fast Frank - Fix the Blueman</title>
     <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1" />
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧞</text></svg>"/>
     
@@ -16,15 +16,29 @@
     <script src="./js/util.js"></script>
   </head>
   <body>
-    <div id="overlayMessageWrap">
-      <div id="overlayMessage"></div>
-      <div id="newGameButton" class="centered hide">
+    <div id="countdownMessageWrap" class="hide">
+      <div id="countdownMessage"></div>
+    </div>
+    
+    <div id="endMessageWrap" class="hide">
+      <div id="endMessage"></div>
+      <hr/>
+      <small>Share with those couple friends you have:</small>
+      <div id="endScore"></div>
+      <!-- No modern app is complete without a deprecated 1990s tag -->
+      <center>
+        <button id="copySocial" onclick="copyEndScore()" class="secondary">Copy for Socials</button>
+      </center>
+      <br/>
+      <div id="newGameButton" class="centered">
         <!-- TODO Add a "Submit Score" checkbox, that does ntfy.sh, but ONLY on win -->
-        <button onclick="util.removeUrlParam('seed', true);" title="New game with a new seed">New</button>
-        <button onclick="util.removeUrlParam(null, true);" title="Restart the game with the same seed">Restart</button>
+        <button onclick="util.removeUrlParam('seed', true);" title="New game with a new random map">New Map</button>
+        &nbsp;|&nbsp;
+        <button onclick="util.removeUrlParam(null, true);" title="Restart the game with the same map">Try Again</button>
       </div>
     </div>
     
+    <!-- TODO For now hide Configuration and Setup, we'll revisit as an initial step before map is shown at a later time
     <details id="configOuter">
       <summary>Configuration and Setup</summary>
       <div id="configWrap">
@@ -39,6 +53,7 @@
         </label>
       </div>
     </details>
+    -->
     
     <!-- Sometimes it's nice to feel like 1990 an use table for layout -->
     <table id="scoreWrap">
@@ -47,15 +62,17 @@
           <span id="scoreCounter">&nbsp;</span>
           <span id="scoreMessage" class="scoreMessageRed"></span>
         </td>
-        <td id="gameButtons" style="text-align: right;">
-          <button onclick="util.removeUrlParam('seed', true);" title="New game with a new seed">New</button>
-          <button onclick="util.removeUrlParam(null, true);" title="Restart the game with the same seed">Restart</button>
-          <button onclick="stopGame(true);" title="Quit, like you do for everything in your life">Give Up</button>
+        <td id="gameButtons" style="text-align: right;" class="hide">
+          <button onclick="util.removeUrlParam('seed', true);" title="New game with a new random map">New Map</button>
+          &nbsp;|&nbsp;
+          <button onclick="util.removeUrlParam(null, true);" title="Restart the game with the same map">Try Again</button>
+          &nbsp;|&nbsp;
+          <button onclick="stopGame(true);" title="Quit, like you do for everything in your life" class="secondary">Give Up</button>
         </td>
       </tr>
     </table>
     
-    <div id="map">
+    <div id="map" class="hide">
       <div id="doll" class="centered">
         <img id="dollHead" src="./blueman/doll-head.png" draggable="false" class="dollDrop" style="top: 0; left: 128px;"></img>
         <img id="dollArmPort" src="./blueman/doll-arm-port.png" draggable="false" class="dollDrop" style="top: 85px; left: 30px;"></img>
@@ -73,7 +90,8 @@
     <script>
       const queryParams = new URLSearchParams(window.location.search);
       
-      const DEBUG = queryParams.get("debug") ?? false;
+      const QUICK = queryParams.get("quick") ?? false;
+      const LE_HOST = "https://gugs.dev/fastfrank/";
       const BLUEMAN_SEED = queryParams.get("seed") ?? new Date().getTime();
       const BLUEMAN_DIR = "blueman/";
       const BLUEMAN_EXT = ".png";
@@ -88,8 +106,9 @@
       const rand = new MersenneTwister(BLUEMAN_SEED);
       
       const state = {
-        mapWidth: 1000,
-        mapHeight: 700,
+        // Loosely 1080p. TODO Will extend map size customization in the future
+        mapWidth: util.getRandomInt(900, 1500),
+        mapHeight: util.getRandomInt(500, 800),
         paused: false, // If we lose visibility pause our timer
         currentZIndex: 3, // Layer last dragged object to the top, so keep a running tally
         // TODO Decide if we want a countdown OR just start the timer on the first drag (cleaner)
@@ -118,8 +137,12 @@
         mapWidthIn: document.getElementById("mapWidthIn"),
         mapHeightIn: document.getElementById("mapHeightIn"),
         doll: document.getElementById("doll"),
-        overlayMessageWrap: document.getElementById("overlayMessageWrap"),
-        overlayMessage: document.getElementById("overlayMessage"),
+        countdownMessageWrap: document.getElementById("countdownMessageWrap"),
+        countdownMessage: document.getElementById("countdownMessage"),
+        endMessageWrap: document.getElementsByName("endMessageWrap"),
+        endMessage: document.getElementById("endMessage"),
+        endScore: document.getElementById("endScore"),
+        copySocial: document.getElementById("copySocial"),
         infoWrap: document.getElementById("infoWrap"),
         scoreCounter: document.getElementById("scoreCounter"),
         scoreMessage: document.getElementById("scoreMessage"),
@@ -199,6 +222,7 @@
         
         dropPiece.style.pointerEvents = "none"; // Disable further interaction
         dropPiece.style.filter = "none";
+        dropPiece.style.opacity = 0.6;
         
         state.lastPiece.element = dropPiece;
         state.lastPiece.penalty = penalty;
@@ -214,7 +238,7 @@
           dollPieces[getKeyFromSrc(state.lastPiece.element.src)] = false;
           
           state.lastPiece.element.style.pointerEvents = "auto";
-          state.lastPiece.element.style.filter = `hue-rotate(${util.getRandomInt(10, 350)}deg)`;
+          state.lastPiece.element.style.filter = `hue-rotate(${util.getRandomHueRotateDeg()}deg)`;
           
           // Better highlight what piece was made active again
           state.lastPiece.element.style.outline = "5px solid goldenrod";
@@ -314,7 +338,7 @@
         newPiece.src = imgPath;
         newPiece.draggable = false; // Turn off built-in browser image dragging
         newPiece.className = "piece";
-        newPiece.style.filter = `hue-rotate(${util.getRandomInt(10, 350)}deg)`;
+        newPiece.style.filter = `hue-rotate(${util.getRandomHueRotateDeg()}deg)`;
         
         if (isDecoy) {
           newPiece.className += " decoy";
@@ -339,9 +363,7 @@
             // Most of the time choose a random item and have it start moving towards our mouse...
             // The MOUSE, specifically NOT towards the piece, as then we have to do position + translate math and boundingRect needlessly
             // TODO Also consider just randomly startAttacking if the user is idle for a while, aka no drag start for X seconds
-            if (util.getRandomFloat() < 0.75) {
-              startAttacking();
-            }
+            startAttacking();
           },
           onDrag: (data) => {
             const candidate = {
@@ -452,8 +474,19 @@
       }
       
       function startGame() {
-        elements.map.style.visibility = "visible";
-        elements.overlayMessageWrap.style.visibility = "hidden";
+        util.changeClassList("map", {
+          show: true,
+          hide: false
+        });
+        
+        util.changeClassList("countdownMessageWrap", {
+          show: false,
+          hide: true
+        });
+        util.changeClassList("gameButtons", {
+          show: true,
+          hide: false
+        });
         
         state.scoreInterval = setInterval(() => {
           if (!state.paused) {
@@ -475,11 +508,7 @@
         elements.scoreMessage.textContent =
           `(${state.score.dropPenalty} was penalty [${state.score.dropBest ?? 0} best, ${state.score.dropWorst} worst], ${(state.score.total - state.score.itemPenalty - state.score.dropPenalty).toFixed(2)} was draggin')`;
         elements.infoWrap.textContent = "";
-        
-        // After the interval stops we update the page text
-        elements.overlayMessageWrap.style.visibility = "visible";
         elements.map.style.pointerEvents = "none";
-        // Clean up any lingering effects
         elements.map.style.removeProperty("filter");
         elements.map.style.removeProperty("transform");
         
@@ -487,16 +516,37 @@
           const endMessage = gaveUp ?
             "You quit!\n" + getLoseMessage() :
             "You won!\n" + getWinMessage();
+          elements.endMessage.textContent = endMessage;
           
-          elements.overlayMessage.textContent = endMessage;
+          elements.endScore.innerHTML = `🧞 I just completed a <u>Fast Frank</u> run in <b>${state.score.total.toFixed(2)}s</b><br/>
+  (Only ${state.score.dropPenalty}s was penalties I swear)<hr/>
+Can you do better? <a href="${LE_HOST}?seed=${BLUEMAN_SEED}" target="_blank">Try the same map!</a> (<small><i>seed ${BLUEMAN_SEED}</i></small>)`;
+          
           util.changeClassList("gameButtons", {
+            show: false,
             hide: true
           });
-          util.changeClassList("newGameButton", {
+          util.changeClassList("endMessageWrap", {
             show: true,
             hide: false
           });
         });
+      }
+      
+      async function copyEndScore() {
+        try {
+          // Copy as rich HTML to paste into socials, most especially Teams at work
+          await navigator.clipboard.write([new ClipboardItem({
+            "text/html": new Blob([elements.endScore.innerHTML], { type: "text/html"}),
+            "text/plain": new Blob([elements.endScore.innerText], { type: "text/plain" })
+          })]);
+          
+          elements.copySocial.textContent = "Copied!";
+        } catch (err) {
+          /* Oh no what if we can't cooooopy */
+          elements.copySocial.textContent = "Error 🤷";
+          console.error("Error on copy", err);
+        }
       }
       
       function getWinMessage() {
@@ -530,21 +580,25 @@
         };
         updateMapDimensions();
         
-        elements.mapWidthIn.value = state.mapWidth;
-        elements.mapHeightIn.value = state.mapHeight;
-        elements.mapWidthIn.addEventListener("input", e => {
-          state.mapWidth = e.target.value;
-          updateMapDimensions();
-        });
-        elements.mapHeightIn.addEventListener("input", e => {
-          state.mapHeight = e.target.value;
-          updateMapDimensions();
-        });
+        if (elements.mapWidthIn) {
+          elements.mapWidthIn.value = state.mapWidth;
+          elements.mapWidthIn.addEventListener("input", e => {
+            state.mapWidth = e.target.value;
+            updateMapDimensions();
+          });
+        }
+        if (elements.mapHeightIn) {
+          elements.mapHeightIn.value = state.mapHeight;
+          elements.mapHeightIn.addEventListener("input", e => {
+            state.mapHeight = e.target.value;
+            updateMapDimensions();
+          });
+        }
         
         // Start with our items, this is so we can double check that no pieces then overlap with them
         items.placeItems();
         
-        // Setup the pieces of the blue man across the map
+        // Setup the pieces of the blueman across the map
         // NOTE we have to put this in a setTimeout so the items can render first and we can check overlap
         setTimeout(() => {
           Object.keys(dollPieces).forEach((piece) => {
@@ -567,12 +621,17 @@
           }
           itemsToRemove.forEach(toRemove => items.removeItem(toRemove));
           
-          // Start the countdown or just rip 'er
-          if (DEBUG) {
+          // Let 'er rip or start the countdown (normal)
+          if (QUICK) {
             startGame();
           }
           else {
-            elements.overlayMessage.textContent = state.currentCountdown;
+            util.changeClassList("countdownMessageWrap", {
+              show: true,
+              hide: false
+            });
+            
+            elements.countdownMessage.textContent = state.currentCountdown;
             const countdownInterval = setInterval(() => {
               state.currentCountdown--;
               
@@ -584,7 +643,7 @@
                 }
               }
               else {
-                elements.overlayMessage.textContent = state.currentCountdown;
+                elements.countdownMessage.textContent = state.currentCountdown;
               }
             }, 999);
           }

@@ -13,6 +13,18 @@ body, input, button {
   font-family: monospace;
 }
 
+a {
+  color: pink;
+}
+
+a:hover {
+  color: white;
+}
+
+a:visited {
+  color: darkmagenta;
+}
+
 button {
   height: 40px;
   padding: 0 10px 0 10px;
@@ -23,7 +35,11 @@ button {
   color: white;
   text-shadow: 0 0 5px black;
   transition: background-color 500ms;
-  cursor: grab;
+  cursor: pointer;
+}
+
+button.secondary {
+  border-width: 1px;
 }
 
 button:hover {
@@ -38,7 +54,6 @@ button:hover {
 }
 
 #map {
-  visibility: hidden; /* Will show after start countdown */
   position: relative;
   background-color: darkslateblue;
   border: 5px groove goldenrod;
@@ -131,7 +146,7 @@ button:hover {
   text-shadow: 0 0 10px red;
 }
 
-#overlayMessageWrap {
+#countdownMessageWrap, #endMessageWrap {
   background-color: black;
   border-radius: 20px;
   border: 1px solid gray;
@@ -148,8 +163,15 @@ button:hover {
   transition: top 10s linear, left 10s linear;
 }
 
-#overlayMessageWrap:hover {
+#countdownMessageWrap:hover, #endMessageWrap:hover {
   animation-play-state: paused;
+}
+
+#endScore {
+  border: 2px inset white;
+  padding: 10px;
+  margin: 20px 0 20px 0;
+  font-size: large;
 }
 
 @keyframes dvd-bounce {

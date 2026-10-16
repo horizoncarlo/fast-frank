@@ -41,6 +41,10 @@ window.util = {
     return list[Math.floor(this.getRandomFloat() * list.length)];
   },
   
+  getRandomHueRotateDeg() {
+    return util.getRandomInt(50, 310);
+  },
+  
   changeClassList(forElementId, changes) {
     Object.keys(changes).forEach(change => {
       const found = document.getElementById(forElementId);

@@ -17,7 +17,7 @@ window.items = {
   
   placeItems() {
     let minItems = 0;
-    let maxItems = 5;
+    let maxItems = 8;
     let minWalls = 0;
     let maxWalls = 6;
     
@@ -46,7 +46,7 @@ window.items = {
     
     // Place anything
     for (let i = 0; i < util.getRandomInt(minItems, maxItems); i++) {
-      this.createItem();
+      this.createItem(false, false);
     }
     // Place walls
     for (let i = 0; i < util.getRandomInt(minWalls, maxWalls); i++) {
@@ -54,9 +54,17 @@ window.items = {
     }
   },
   
-  createItem(isOnlyWalls = false) {
+  createItem(isOnlyWalls = false, isAllowWalls = true) {
     // Decide which item to create
-    const itemObj = isOnlyWalls ? wallItem : util.getRandomItemFromArray(this.available);
+    let filteredItems = this.available;
+    if (isOnlyWalls) {
+      filteredItems = this.available.filter(item => item.isWall);
+    }
+    else if (!isAllowWalls) {
+      filteredItems = this.available.filter(item => !item.isWall);
+    }
+    
+    const itemObj = isOnlyWalls ? wallItem : util.getRandomItemFromArray(filteredItems);
     const newItem = itemObj.isWall ? document.createElement("div") : document.createElement("img");
     
     if (itemObj.isWall) {
@@ -190,13 +198,15 @@ function onHitTeleportPiece(dollPiece, itemObj) {
 }
 
 function onHitLockPiece(dollPiece, itemObj) {
+  const frozenTime = util.getRandomInt(4, 6);
+  
   window.dispatchEvent(new PointerEvent("pointerup"));
   
   const initialPointerEvents = new String(dollPiece.style.pointerEvents);
   const initialOpacity = new String(dollPiece.style.opacity);
   const initialFilter = new String(dollPiece.style.filter);
   
-  elements.scoreMessage.textContent = "Frozen";
+  elements.scoreMessage.textContent = `Frozen for ${frozenTime}s`;
   dollPiece.style.pointerEvents = "none";
   dollPiece.style.opacity = 0.1;
   dollPiece.style.filter = "drop-shadow(red 0 0 5px) !important";
@@ -206,7 +216,7 @@ function onHitLockPiece(dollPiece, itemObj) {
     dollPiece.style.pointerEvents = initialPointerEvents;
     dollPiece.style.opacity = initialOpacity;
     dollPiece.style.filter = initialFilter;
-  }, util.getRandomInt(4, 6) * 1000);
+  }, frozenTime * 1000);
 }
 
 function onHitUndoPiece(dollPiece, itemObj) {
@@ -218,7 +228,7 @@ function onHitBlackout(dollPiece, itemObj) {
 }
 
 function onHitBlur(dollPiece, itemObj) {
-  _onHitGenericFilterTransform(util.getRandomInt(8, 12), "Blur for", "blur(15px)");
+  _onHitGenericFilterTransform(util.getRandomInt(8, 12), "Drunk for", "blur(15px)");
 }
 
 function onHitFlip(dollPiece, itemObj) {
@@ -227,5 +237,5 @@ function onHitFlip(dollPiece, itemObj) {
 
 function onHitSkew(dollPiece, itemObj) {
   const skewAmount = util.getRandomInt(10, 25) * (util.getRandomBoolean() ? 1 : -1);
-  _onHitGenericFilterTransform(5, "Skew for", null, `skew(${skewAmount}deg, ${skewAmount}deg)`);
+  _onHitGenericFilterTransform(5, "Screwed for", null, `skew(${skewAmount}deg, ${skewAmount}deg)`);
 }
