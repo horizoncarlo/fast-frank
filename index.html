@@ -56,7 +56,7 @@
     </table>
     
     <div id="map">
-      <div class="centered doll">
+      <div id="doll" class="centered">
         <img id="dollHead" src="./blueman/doll-head.png" draggable="false" class="dollDrop" style="top: 0; left: 128px;"></img>
         <img id="dollArmPort" src="./blueman/doll-arm-port.png" draggable="false" class="dollDrop" style="top: 85px; left: 30px;"></img>
         <img id="dollTorso" src="./blueman/doll-torso.png" draggable="false" class="dollDrop" style="top: 76px; left: 117px;"></img>
@@ -77,6 +77,7 @@
       const BLUEMAN_SEED = queryParams.get("seed") ?? new Date().getTime();
       const BLUEMAN_DIR = "blueman/";
       const BLUEMAN_EXT = ".png";
+      const COLLISION_SAFE_GAP_PX = 0.5;
       
       // Add our seed to the URL
       util.addUrlParam("seed", BLUEMAN_SEED);
@@ -87,7 +88,7 @@
         mapWidth: 1000,
         mapHeight: 700,
         paused: false, // If we lose visibility pause our timer
-        currentZIndex: 1, // Layer last dragged object to the top, so keep a running tally
+        currentZIndex: 3, // Layer last dragged object to the top, so keep a running tally
         // TODO Decide if we want a countdown OR just start the timer on the first drag (cleaner)
         currentCountdown: 3, // Start countdown
         scoreInterval: null, // setInterval for score countdown
@@ -96,8 +97,13 @@
           itemPenalty: 0,
           dropPenalty: 0,
           dropWorst: 0,
-          dropBest: null
+          dropBest: null,
         },
+        // Track what piece was matched last
+        lastPiece: {
+          element: null,
+          penalty: 0
+        }
       };
       const elements = {
         map: document.getElementById("map"),
@@ -126,10 +132,6 @@
       }
       
       function handleDrop(dragEvent) {
-        const getKeyFromSrc = (src) => {
-          return src.substring(src.lastIndexOf(BLUEMAN_DIR) + BLUEMAN_DIR.length, src.length - BLUEMAN_EXT.length);
-        };
-        
         const droppedOn = document.elementsFromPoint(dragEvent.event.clientX, dragEvent.event.clientY);
         
         droppedOn.forEach(dropped => {
@@ -149,17 +151,8 @@
               if (penalty !== 0) {
                 elements.infoWrap.textContent = `Off By: X=${deltaX}, Y=${deltaY}`;
               }
-              elements.scoreMessage.textContent = penalty === 0 ? `Perfect` : `+${penalty}s`;
               
-              state.score.total += penalty;
-              state.score.dropPenalty += penalty;
-              state.score.dropWorst = Math.max(state.score.dropWorst, penalty);
-              state.score.dropBest = Math.min(state.score.dropBest ?? Infinity, penalty);
-              
-              dollPieces[dragKey] = true;
-              
-              dragEvent.currentNode.style.pointerEvents = "none"; // Disable further interaction
-              dragEvent.currentNode.style.filter = "none";
+              doDropMatchedPiece(penalty, dragEvent.currentNode);
               
               if (Object.values(dollPieces).every(val => val === true)) {
                 stopGame();
@@ -169,7 +162,55 @@
         });
       }
       
-      function createBodyPiece(imgPath) {
+      function doDropMatchedPiece(penalty, dropPiece) {
+        elements.scoreMessage.textContent = penalty === 0 ? `Perfect` : `+${penalty}s`;
+        
+        state.score.total += penalty;
+        state.score.dropPenalty += penalty;
+        state.score.dropWorst = Math.max(state.score.dropWorst, penalty);
+        state.score.dropBest = Math.min(state.score.dropBest ?? Infinity, penalty);
+        
+        dollPieces[getKeyFromSrc(dropPiece.src)] = true;
+        
+        dropPiece.style.pointerEvents = "none"; // Disable further interaction
+        dropPiece.style.filter = "none";
+        
+        state.lastPiece.element = dropPiece;
+        state.lastPiece.penalty = penalty;
+      }
+      
+      function undoDropMatchedPiece() {
+        if (state.lastPiece.element) {
+          elements.scoreMessage.textContent = `-${state.lastPiece.penalty}s Undo`;
+          
+          state.score.total -= state.lastPiece.penalty;
+          state.score.dropPenalty -= state.lastPiece.penalty;
+          
+          dollPieces[getKeyFromSrc(state.lastPiece.element.src)] = false;
+          
+          state.lastPiece.element.style.pointerEvents = "auto";
+          state.lastPiece.element.style.filter = `hue-rotate(${util.getRandomInt(10, 350)}deg)`;
+          
+          // Better highlight what piece was made active again
+          state.lastPiece.element.style.outline = "5px solid goldenrod";
+          const toBorder = state.lastPiece.element;
+          setTimeout(() => {
+            toBorder.style.outline = "none";
+          }, 1000);
+          
+          state.lastPiece.element = null;
+          state.lastPiece.penalty = 0;
+          
+          return true;
+        }
+        return false;
+      }
+      
+      function getKeyFromSrc(pieceSrc) {
+        return pieceSrc.substring(pieceSrc.lastIndexOf(BLUEMAN_DIR) + BLUEMAN_DIR.length, pieceSrc.length - BLUEMAN_EXT.length);
+      }
+      
+      function createPiece(imgPath) {
         const minX = elements.map.offsetLeft;
         const minY = elements.map.offsetTop;
         const maxX = minX + state.mapWidth;
@@ -181,41 +222,87 @@
         newPiece.className = "piece";
         newPiece.style.filter = `hue-rotate(${util.getRandomInt(10, 350)}deg)`;
         
-        placeBodyPiece(newPiece);
+        elements.map.appendChild(newPiece);
+        randomizePiecePosition(newPiece);
         
-        new NeoDrag.Draggable(newPiece, {
+        let lastValidPosition = { x: 0, y: 0 };
+        
+        const neodrag = new NeoDrag.Draggable(newPiece, {
           bounds: "parent",
+          position: { ...lastValidPosition },
           onDragStart: (data) => {
             state.currentZIndex++;
             data.currentNode.style.zIndex = state.currentZIndex;
             elements.infoWrap.textContent = "";
           },
           onDrag: (data) => {
-            // Store a single bounding rect before looping items
-            const ourRect = data.currentNode.getBoundingClientRect();
-            
-            for (let i = 0; i < items.all.length; i++) {
-              // Cache the bounding rect if we don't have it stored
-              if (!items.all[i].boundingRect) {
-                items.all[i].boundingRect = items.all[i].element.getBoundingClientRect();
+            const candidate = {
+              x: data.offsetX,
+              y: data.offsetY,
+            };
+
+            const start = { ...lastValidPosition };
+            const startRect = data.currentNode.getBoundingClientRect();
+            const dx = candidate.x - start.x;
+            const dy = candidate.y - start.y;
+
+            let isHit = Infinity;
+            for (const checkItem of items.all) {
+              // Cache our item position if we haven't already
+              // TODO This will need to change if the item starts moving!!!
+              if (!checkItem.boundingRect) {
+                checkItem.boundingRect = checkItem.element.getBoundingClientRect();
               }
               
-              // If we overlap with an item, process it
-              if (util.checkOverlapBounds(ourRect, items.all[i].boundingRect)) {
-                items.all[i].onHit(data.currentNode, items.all[i].element);
+              // Check collision during the move
+              const hitTime = util.sweptAabbHitTime(
+                startRect,
+                dx,
+                dy,
+                checkItem.boundingRect
+              );
+              
+              // BOOM collide
+              if (hitTime !== null && hitTime < isHit) {
+                isHit = hitTime;
+                
+                // If the collision was with a usable item, consume it now and be done with the entire process
+                if (!checkItem.isWall) {
+                  checkItem.onHit(data.currentNode, checkItem);
+                  return;
+                }
+                
+                // Can't find an earlier collision
+                if (isHit === 0) {
+                  break;
+                }
               }
             }
+
+            // If we DON'T have a collision, just update and allow the move and bail
+            if (isHit === Infinity) {
+              lastValidPosition = candidate;
+              return;
+            }
+            
+            // Stop slightly before the collision, so that we don't get "stuck" on the item
+            const maxDelta = Math.max(Math.abs(dx), Math.abs(dy));
+            const safeT = maxDelta > 0 ? Math.max(0, isHit - COLLISION_SAFE_GAP_PX / maxDelta) : 0;
+            
+            // We need to apply the incoming translation (as Neodrag hasn't yet) to the last "safe" position
+            lastValidPosition = {
+              x: start.x + dx * safeT,
+              y: start.y + dy * safeT,
+            };
+            neodrag.updateOptions({
+              position: { ...lastValidPosition },
+            });
           },
-          onDragEnd: (data) => {
-            console.log("onDragEnd", data, data.currentNode.style.left, data.currentNode.style.top);
-            handleDrop(data);
-          },
+          onDragEnd: handleDrop
         });
-        
-        elements.map.appendChild(newPiece);
       }
       
-      function placeBodyPiece(pieceEle) {
+      function randomizePiecePosition(pieceEle, iteration = 0, isAllowOverlapWithItem = false) {
         pieceEle.style.left = util.getRandomInt(0, state.mapWidth) + "px";
         pieceEle.style.top = util.getRandomInt(0, state.mapHeight) + "px";
         
@@ -230,9 +317,34 @@
         // Note in case this was called later, we want to remove any drag and drop translation
         // Otherwise we could end up placed out of bounds
         
-        // TODO Bug still, when hitting a Steering Wheel for Teleport, the next click to drag "jumps" as if offset/translated right away, when this line is uncommented
+        // TTODO Bug still, when hitting a Steering Wheel for Teleport, the next click to drag "jumps" as if offset/translated right away, when this line is uncommented
         // Likely need to apply current .translate to our left/top style BEFORE calculating bounds? Or rather not apply it, but calculate bounds with left+translate, then adjust position accordingly
         // pieceEle.style.translate = "0px";
+        
+        // Determine if we placed over any items, and move our piece if we have
+        const ourRect = pieceEle.getBoundingClientRect();
+        let lastItemOverlap = null;
+        for (const checkItem of items.all) {
+          if (!checkItem.boundingRect) {
+            checkItem.boundingRect = checkItem.element.getBoundingClientRect();
+          }
+          
+          if (util.checkOverlapBounds(ourRect, checkItem.boundingRect)) {
+            lastItemOverlap = checkItem.element;
+          }
+        }
+        
+        if (lastItemOverlap) {
+          iteration++;
+          
+          // Prevent a potential infinite loop, if we've tried 200 times, just remove the last item we hit and start over
+          if (iteration > 300) {
+            items.removeItem(lastItemOverlap);
+            iteration = 0;
+          }
+          
+          randomizePiecePosition(pieceEle, iteration);
+        }
       }
       
       function startGame() {
@@ -315,35 +427,47 @@
           updateMapDimensions();
         });
         
-        // Setup the pieces of the blue man across the map
-        Object.keys(dollPieces).forEach((piece) => {
-          createBodyPiece(`${BLUEMAN_DIR}${piece}${BLUEMAN_EXT}`);
-        });
-        
-        // Setup items next
+        // Start with our items, this is so we can double check that no pieces then overlap with them
         items.placeItems();
         
-        // Start the countdown or just rip 'er
-        if (DEBUG) {
-          startGame();
-        }
-        else {
-          elements.overlayMessage.textContent = state.currentCountdown;
-          const countdownInterval = setInterval(() => {
-            state.currentCountdown--;
-            
-            if (state.currentCountdown <= 0) {
-              startGame();
+        // Setup the pieces of the blue man across the map
+        // NOTE we have to put this in a setTimeout so the items can render first and we can check overlap
+        setTimeout(() => {
+          Object.keys(dollPieces).forEach((piece) => {
+            createPiece(`${BLUEMAN_DIR}${piece}${BLUEMAN_EXT}`);
+          });
+          
+          // Remove any walls overlapping with the doll, so we have a clear space to move
+          const itemsToRemove = [];
+          for (const checkItem of items.all) {
+            if (checkItem.isWall && util.checkOverlap(elements.doll, checkItem.element)) {
+              itemsToRemove.push(checkItem.element);
+            }
+          }
+          itemsToRemove.forEach(toRemove => items.removeItem(toRemove));
+          
+          // Start the countdown or just rip 'er
+          if (DEBUG) {
+            startGame();
+          }
+          else {
+            elements.overlayMessage.textContent = state.currentCountdown;
+            const countdownInterval = setInterval(() => {
+              state.currentCountdown--;
               
-              if (countdownInterval) {
-                clearInterval(countdownInterval);
+              if (state.currentCountdown <= 0) {
+                startGame();
+                
+                if (countdownInterval) {
+                  clearInterval(countdownInterval);
+                }
               }
-            }
-            else {
-              elements.overlayMessage.textContent = state.currentCountdown;
-            }
-          }, 999);
-        }
+              else {
+                elements.overlayMessage.textContent = state.currentCountdown;
+              }
+            }, 999);
+          }
+        }, 100);
       }
       
       addEventListener("DOMContentLoaded", (event) => {

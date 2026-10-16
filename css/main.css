@@ -57,11 +57,14 @@ button:hover {
 }
 
 #infoWrap {
+  position: relative;
   font-size: smaller;
   text-shadow: 0 0 3px black;
+  z-index: 2;
 }
 
 .piece {
+  z-index: 3; /* Start above the doll and items, keep js.state.currentZIndex in sync */
   position: absolute;
   user-select: none;
   opacity: 0.9;
@@ -77,11 +80,18 @@ button:hover {
 }
 
 .item {
+  z-index: 2;
   position: absolute;
   user-select: none;
 }
 
-.doll {
+.wall {
+  z-index: 0;
+  background: linear-gradient(0deg, #505050 0%, gray 100%);
+}
+
+#doll {
+  z-index: 1;
   position: relative;
   width: 256px;
   height: 354px;
