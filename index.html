@@ -520,6 +520,7 @@
           scoreMessageBlue: true,
           scoreMessageRed: false
         });
+        elements.scoreCounter.textContent = state.score.total.toFixed(2);
         elements.scoreMessage.textContent =
           `(${state.score.dropPenalty} was penalty [${state.score.dropBest ?? 0} best, ${state.score.dropWorst} worst], ${(state.score.total - state.score.itemPenalty - state.score.dropPenalty).toFixed(2)} was draggin')`;
         elements.infoWrap.textContent = "";
