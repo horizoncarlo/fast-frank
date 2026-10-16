@@ -74,7 +74,7 @@
       </tr>
     </table>
     
-    <div id="map" class="hide">
+    <div id="map">
       <div id="doll" class="centered">
         <img id="dollHead" src="./blueman/doll-head.png" draggable="false" class="dollDrop" style="top: 0; left: 128px;"></img>
         <img id="dollArmPort" src="./blueman/doll-arm-port.png" draggable="false" class="dollDrop" style="top: 85px; left: 30px;"></img>
@@ -478,10 +478,7 @@
       }
       
       function startGame() {
-        util.changeClassList("map", {
-          show: true,
-          hide: false
-        });
+        elements.map.style.removeProperty("pointer-events");
         
         util.changeClassList("countdownMessageWrap", {
           show: false,
@@ -633,6 +630,7 @@ Can you do better? <a href="${LE_HOST}?seed=${BLUEMAN_SEED}" target="_blank">Try
             startGame();
           }
           else {
+            elements.map.style.pointerEvents = "none";
             util.changeClassList("countdownMessageWrap", {
               show: true,
               hide: false
