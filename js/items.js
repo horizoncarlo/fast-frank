@@ -1,7 +1,7 @@
 const wallItem = { name: "wall", isWall: true };
 
 window.items = {
-  all: [], // element, boundingRect (set later as a cache), onHit (func)
+  all: [], // name, title, element, boundingRect (set later as a cache), onHit (function), moveInterval (setInterval)
   available: [
     wallItem,
     { name: "time-penalty", title: "5-10 second time penalty. Stop for a beer!", onHit: onHitTimePenalty },
@@ -104,6 +104,38 @@ window.items = {
           this.removeItem(newItem);
         }
       });
+    }
+    
+    // Decide if we're going to have innate movement or not (never move walls)
+    if (!itemObj.isWall && util.getRandomFloat() < 0.6) {
+      newItem.moveInterval = setInterval(() => {
+        // Skip if we're already HUNGRY FOR BLOOD
+        if (newItem === state.attackingItem?.element) {
+          return;
+        }
+        
+        if (util.getRandomFloat() < 0.4) {
+          // Move horizontal or vertical randomly, but also bound within the map
+          if (util.getRandomBoolean()) {
+            let newLeft = parseInt(newItem.style.left) + ((util.getRandomBoolean() ? 1 : -1) * util.getRandomInt(10, 100));
+            newLeft = Math.max(newLeft, 0);
+            newLeft = Math.min(newLeft, state.mapWidth);
+            newItem.style.left = newLeft + "px";
+          }
+          else {
+            let newTop = parseInt(newItem.style.top) + ((util.getRandomBoolean() ? 1 : -1) * util.getRandomInt(10, 100));
+            newTop = Math.max(parseInt(newItem.style.top), 0);
+            newTop = Math.min(parseInt(newItem.style.top), state.mapHeight);
+            newItem.style.top = newTop + "px";
+          }
+          
+          // Reset our cached position so it's recalculated fresh next time it's needed
+          const foundObj = items.all.find(item => item.element === newItem);
+          if (foundObj) {
+            foundObj.boundingRect = null;
+          }
+        }
+      }, util.getRandomInt(750, 3000));
     }
     
     elements.map.appendChild(newItem);

@@ -78,6 +78,24 @@ window.util = {
     }
   },
   
+  async sendNTFY(message, seed) {
+    try {
+      const response = await fetch(NTFY_URL, {
+        method: 'POST',
+        headers: {
+          Title: 'Fast Frank',
+          Actions: `view, Open Game, ${LE_HOST}${seed ? "?seed=" + seed : ""}`,
+        },
+        body: message,
+      });
+
+      return response.ok;
+    } catch (err) {
+      console.error("ntfy.sh failed", err);
+      return false;
+    }
+  },
+  
   checkOverlap(element1, element2) {
     return this.checkOverlapBounds(element1.getBoundingClientRect(),
                                    element2.getBoundingClientRect());

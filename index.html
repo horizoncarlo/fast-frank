@@ -23,11 +23,13 @@
     <div id="endMessageWrap" class="hide">
       <div id="endMessage"></div>
       <hr/>
-      <small>Share with those couple friends you have:</small>
+      <small>Share with those couple friends🫂 you have:</small>
       <div id="endScore"></div>
       <!-- No modern app is complete without a deprecated 1990s tag -->
       <center>
-        <button id="copySocial" onclick="copyEndScore()" class="secondary">Copy for Socials</button>
+        <button id="copySocial" onclick="socialEndScore()" class="secondary">Copy and Send to Socials</button>
+        <br/>
+        <span style="font-size: 14px;"><i>You can subscribe to updates via <a href="https://ntfy.sh/fast-frank-blueman" target="_blank">ntfy.sh</a></i></span>
       </center>
       <br/>
       <div id="newGameButton" class="centered">
@@ -92,6 +94,7 @@
       
       const QUICK = queryParams.get("quick") ?? false;
       const LE_HOST = "https://gugs.dev/fastfrank/";
+      const NTFY_URL = "https://ntfy.sh/fast-frank-blueman";
       const BLUEMAN_SEED = queryParams.get("seed") ?? new Date().getTime();
       const BLUEMAN_DIR = "blueman/";
       const BLUEMAN_EXT = ".png";
@@ -237,6 +240,7 @@
           
           dollPieces[getKeyFromSrc(state.lastPiece.element.src)] = false;
           
+          state.lastPiece.element.style.opacity = 0.9;
           state.lastPiece.element.style.pointerEvents = "auto";
           state.lastPiece.element.style.filter = `hue-rotate(${util.getRandomHueRotateDeg()}deg)`;
           
@@ -533,7 +537,7 @@ Can you do better? <a href="${LE_HOST}?seed=${BLUEMAN_SEED}" target="_blank">Try
         });
       }
       
-      async function copyEndScore() {
+      async function socialEndScore() {
         try {
           // Copy as rich HTML to paste into socials, most especially Teams at work
           await navigator.clipboard.write([new ClipboardItem({
@@ -541,12 +545,15 @@ Can you do better? <a href="${LE_HOST}?seed=${BLUEMAN_SEED}" target="_blank">Try
             "text/plain": new Blob([elements.endScore.innerText], { type: "text/plain" })
           })]);
           
-          elements.copySocial.textContent = "Copied!";
+          elements.copySocial.textContent = "Copied and Sent!";
         } catch (err) {
           /* Oh no what if we can't cooooopy */
           elements.copySocial.textContent = "Error 🤷";
           console.error("Error on copy", err);
         }
+        
+        // Also send to ntfy.sh for anyone who is listening
+        util.sendNTFY(elements.endScore.innerText, BLUEMAN_SEED);
       }
       
       function getWinMessage() {
