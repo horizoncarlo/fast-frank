@@ -588,6 +588,7 @@ Can you do better? <a href="${LE_HOST}?seed=${BLUEMAN_SEED}" target="_blank">Try
             "text/plain": new Blob([elements.endScore.innerText], { type: "text/plain" })
           })]);
           
+          elements.copySocial.disabled = true;
           elements.copySocial.textContent = "Copied and Sent!";
         } catch (err) {
           /* Oh no what if we can't cooooopy */
