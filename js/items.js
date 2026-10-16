@@ -6,10 +6,15 @@ window.items = {
   available: [
     wallItem,
     { name: "time-penalty", title: "5-10 second time penalty. Stop for a beer!", onHit: onHitTimePenalty },
-    { name: "time-bonus", title: "3-5 second time bonus. Get caffeined up!", onHit: onHitTimeBonus },
+    { name: "time-bonus", title: "3-5 second time bonus. Get caffeined up!", onHit: onHitTimeBonus, isClickable: true },
     { name: "teleport-piece", title: "Teleport the piece to a random location. Vroom vroom!", onHit: onHitTeleportPiece },
     { name: "lock-piece", title: "Lock the piece for 4-6 seconds. Brr cold!", onHit: onHitLockPiece },
     { name: "undo-piece", title: "Undo the last piece, including any penalty", onHit: onHitUndoPiece, isClickable: true },
+    { name: "blackout", title: "Darken the screen a ton for 4-10 seconds. You'll feel better in the morning!", onHit: onHitBlackout },
+    { name: "blur", title: "Blur the screen a ton for 8-12 seconds. Wait for the hangover!", onHit: onHitBlur },
+    { name: "flip", title: "Flip the map for 5 seconds. Dragging is tough!", onHit: onHitFlip },
+    { name: "zoom", title: "Zoom the map for 10-15 seconds. Smile for the camera!", onHit: onHitZoom },
+    { name: "skew", title: "Skew the map for 5 seconds. Then you can remove the screw from your head!", onHit: onHitSkew },
   ],
   
   placeItems() {
@@ -45,7 +50,7 @@ window.items = {
     for (let i = 0; i < util.getRandomInt(minItems, maxItems); i++) {
       this.createItem();
     }
-    // Place only walls
+    // Place walls
     for (let i = 0; i < util.getRandomInt(minWalls, maxWalls); i++) {
       this.createItem(true);
     }
@@ -87,8 +92,9 @@ window.items = {
     
     // Add a listener if we're supposed to be clickable as well as collidable
     if (itemObj.isClickable) {
+      newItem.style.cursor = "pointer";
       newItem.addEventListener("click", () => {
-        if (itemObj.onHit()) {
+        if (typeof itemObj.onHit === "function" && itemObj.onHit() !== false) {
           this.removeItem(newItem);
         }
       });
@@ -101,7 +107,7 @@ window.items = {
       element: newItem,
       onHit: (...args) => {
         console.log(`onHit with ${itemObj.name}`, args);
-        if (typeof itemObj.onHit === "function" && itemObj.onHit(...args)) {
+        if (typeof itemObj.onHit === "function" && itemObj.onHit(...args) !== false) {
           this.removeItem(newItem);
         }
       }
@@ -117,19 +123,47 @@ window.items = {
   },
 }
 
+function _onHitGenericFilterTransform(timeSeconds, textPrefix, filter, transform, opacity) {
+  if (filter) {
+    elements.map.style.filter = (elements.map.style.filter ?? "") + " " + filter;
+  }
+  if (transform) {
+    elements.map.style.transform = (elements.map.style.transform ?? "") + " " + transform;
+  }
+  if (typeof opacity === "number") {
+    elements.map.style.opacity = opacity;
+  }
+  
+  if (textPrefix) {
+    elements.scoreMessage.textContent = textPrefix + (timeSeconds ? ` ${timeSeconds}s` : "");
+  }
+  
+  if (typeof timeSeconds === "number" && timeSeconds > 0) {
+    setTimeout(() => {
+      // TODO Could be more granular, since technically if you hit a 10 second filter/transform item then a 1 second the 1 second clears BOTH
+      elements.map.style.removeProperty("filter");
+      elements.map.style.removeProperty("transform");
+      
+      if (typeof opacity === "number") {
+        elements.map.style.opacity = 1;
+      }
+    }, timeSeconds * 1000);
+  }
+}
+
 function onHitTimePenalty(dollPiece, itemObj) {
   const penalty = util.getRandomInt(5, 10);
   state.score.total += penalty;
   state.score.itemPenalty += penalty;
   elements.scoreMessage.textContent = `+${penalty} beer`;
-  return true;
+  
+  _onHitGenericFilterTransform(0.5, null, "blur(1px)");
 }
 
 function onHitTimeBonus(dollPiece, itemObj) {
   const bonus = util.getRandomInt(3, 5);
   state.score.total -= bonus;
   elements.scoreMessage.textContent = `-${bonus} coffee`;
-  return true;
 }
 
 function onHitTeleportPiece(dollPiece, itemObj) {
@@ -142,7 +176,6 @@ function onHitTeleportPiece(dollPiece, itemObj) {
     // dollPiece.style.translate = `${util.getRandomInt(50, 200)}px ${util.getRandomInt(50, 200)}px`;
     randomizePiecePosition(dollPiece);
   });
-  return true;
 }
 
 function onHitLockPiece(dollPiece, itemObj) {
@@ -163,9 +196,29 @@ function onHitLockPiece(dollPiece, itemObj) {
     dollPiece.style.opacity = initialOpacity;
     dollPiece.style.filter = initialFilter;
   }, util.getRandomInt(4, 6) * 1000);
-  return true;
 }
 
 function onHitUndoPiece(dollPiece, itemObj) {
   return undoDropMatchedPiece();
+}
+
+function onHitBlackout(dollPiece, itemObj) {
+  _onHitGenericFilterTransform(util.getRandomInt(4, 10), "Blackout for", null, null, 0.05);
+}
+
+function onHitBlur(dollPiece, itemObj) {
+  _onHitGenericFilterTransform(util.getRandomInt(8, 12), "Blur for", "blur(15px)");
+}
+
+function onHitFlip(dollPiece, itemObj) {
+  _onHitGenericFilterTransform(5, "Flip for", "sepia(1)", util.getRandomBoolean() ? "scaleY(-1)" : "scaleX(-1)");
+}
+
+function onHitZoom(dollPiece, itemObj) {
+  _onHitGenericFilterTransform(util.getRandomInt(10, 15), "Zoom for", "grayscale(1)", "scale(3)");
+}
+
+function onHitSkew(dollPiece, itemObj) {
+  const skewAmount = util.getRandomInt(10, 25) * (util.getRandomBoolean() ? 1 : -1);
+  _onHitGenericFilterTransform(5, "Skew for", null, `skew(${skewAmount}deg, ${skewAmount}deg)`);
 }

@@ -234,6 +234,8 @@
             state.currentZIndex++;
             data.currentNode.style.zIndex = state.currentZIndex;
             elements.infoWrap.textContent = "";
+            
+            // TTODO Start moving a random item towards the dragged piece
           },
           onDrag: (data) => {
             const candidate = {
