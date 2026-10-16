@@ -45,10 +45,6 @@ window.items = {
       maxWalls = 0;
     }
     
-    // QUIDEL TRY NO WALLS
-    minWalls = 0;
-    maxWalls = 0;
-    
     // Place anything
     for (let i = 0; i < util.getRandomInt(minItems, maxItems); i++) {
       this.createItem();
