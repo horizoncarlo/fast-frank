@@ -13,7 +13,6 @@ window.items = {
     { name: "blackout", title: "Darken the screen a ton for 4-10 seconds. You'll feel better in the morning!", onHit: onHitBlackout },
     { name: "blur", title: "Blur the screen a ton for 8-12 seconds. Wait for the hangover!", onHit: onHitBlur },
     { name: "flip", title: "Flip the map for 5 seconds. Dragging is tough!", onHit: onHitFlip },
-    { name: "zoom", title: "Zoom the map for 10-15 seconds. Smile for the camera!", onHit: onHitZoom },
     { name: "skew", title: "Skew the map for 5 seconds. Then you can remove the screw from your head!", onHit: onHitSkew },
   ],
   
@@ -46,6 +45,10 @@ window.items = {
       maxWalls = 0;
     }
     
+    // QUIDEL TRY NO WALLS
+    minWalls = 0;
+    maxWalls = 0;
+    
     // Place anything
     for (let i = 0; i < util.getRandomInt(minItems, maxItems); i++) {
       this.createItem();
@@ -58,7 +61,7 @@ window.items = {
   
   createItem(isOnlyWalls = false) {
     // Decide which item to create
-    const itemObj = isOnlyWalls ? wallItem : this.available[Math.floor(rand.random() * this.available.length)];
+    const itemObj = isOnlyWalls ? wallItem : this.available[Math.floor(util.getRandomFloat() * this.available.length)];
     const newItem = itemObj.isWall ? document.createElement("div") : document.createElement("img");
     
     if (itemObj.isWall) {
@@ -120,6 +123,20 @@ window.items = {
       items.all.splice(foundIndex, 1);
       elements.map.removeChild(itemEle);
     }
+  },
+  
+  getRandomItem(isNoWalls = false) {
+    if (items.all.length) {
+      let checkList = items.all;
+      
+      if (isNoWalls) {
+        checkList = checkList.filter(item => !item.isWall);
+      }
+      if (checkList.length) {
+        return checkList[Math.floor(util.getRandomFloat() * checkList.length)];
+      }
+    }
+    return null;
   },
 }
 
@@ -212,10 +229,6 @@ function onHitBlur(dollPiece, itemObj) {
 
 function onHitFlip(dollPiece, itemObj) {
   _onHitGenericFilterTransform(5, "Flip for", "sepia(1)", util.getRandomBoolean() ? "scaleY(-1)" : "scaleX(-1)");
-}
-
-function onHitZoom(dollPiece, itemObj) {
-  _onHitGenericFilterTransform(util.getRandomInt(10, 15), "Zoom for", "grayscale(1)", "scale(3)");
 }
 
 function onHitSkew(dollPiece, itemObj) {

@@ -23,16 +23,13 @@ Set max window size to be fair and consistent between monitors
 Supastate https://www.npmjs.com/package/supastate for light state
 
 # What is Left
-- TODO ntfy.sh on game win/loss
+- TTODO ntfy.sh on game win/loss
 - TODO Terrain and obstacle generation - different types, locations, maybe positive effects?, etc. Moving obstacles too
-  - Integrate via Drag event, check hit detection via document.elementsFromPoint
   - **This is key** the idea is there are different choices and paths, there should be SOME level of strategy / difference between players on how they approach a map
-- TODO Limb modifications and mutators - decoy (no-move cursor, lose points if dropped), bomb (countdown then explode, minus point, reposition), shrunken (need to spend time mousing over to grow before dragging?), rotated (q/e to rotate before dragging?), teleport (randomly jumps around screen)
+- TTODO Limb modifications and mutators - decoy (no-move cursor, lose points if dropped), bomb (countdown then explode, minus point, reposition), shrunken (need to spend time mousing over to grow before dragging?), rotated (q/e to rotate before dragging?), teleport (randomly jumps around screen)
 - TODO For tracking score consider details like "worst offset" and "average time" (which is tracked as dragStart to successful dragEnd)
-- TODO Config and Setup options: Name, Background gradient 1 & 2. Store some of these in local storage as well
+- TODO Config and Setup options: Name, Background gradient 1 & 2, Map Size, Item/Wall count?. Store some of these in local storage as well
   - Have this as an initial screen before the map, then you press "go". Overlay the countdown over the map in that case. Or just remove the countdown, and have it start on first drag
-- TODO Consider additional pieces, like the groin, maybe joints are split? Could potentially be random?
-  - Unlikely to be honest, would prefer to spend time on making the game more interesting in other ways
 - TODO What about a "mask" you get from https://kenney.nl/assets/animal-pack-remastered over the head that...SOMEHOW...drastically changes the game?
   - Not very realistic on our timeline
 

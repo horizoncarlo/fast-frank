@@ -78,6 +78,8 @@
       const BLUEMAN_DIR = "blueman/";
       const BLUEMAN_EXT = ".png";
       const COLLISION_SAFE_GAP_PX = 0.5;
+      const ITEM_MOVE_SPEED = 1;
+      const ITEM_MOVE_INTERVAL_MS = 20;
       
       // Add our seed to the URL
       util.addUrlParam("seed", BLUEMAN_SEED);
@@ -103,7 +105,12 @@
         lastPiece: {
           element: null,
           penalty: 0
-        }
+        },
+        isDragging: false,
+        lastMouseX: null,
+        lastMouseY: null,
+        attackingItem: null,
+        attackingItemInterval: null,
       };
       const elements = {
         map: document.getElementById("map"),
@@ -132,6 +139,9 @@
       }
       
       function handleDrop(dragEvent) {
+        state.isDragging = false;
+        stopAttacking();
+        
         const droppedOn = document.elementsFromPoint(dragEvent.event.clientX, dragEvent.event.clientY);
         
         droppedOn.forEach(dropped => {
@@ -210,6 +220,54 @@
         return pieceSrc.substring(pieceSrc.lastIndexOf(BLUEMAN_DIR) + BLUEMAN_DIR.length, pieceSrc.length - BLUEMAN_EXT.length);
       }
       
+      function startAttacking() {
+        // Clear any current attack, just in case
+        stopAttacking();
+        
+        // Chance we don't have a valid item, in which case we do nothing
+        state.attackingItem = items.getRandomItem(true);
+        if (state.attackingItem) {
+          state.attackingItemInterval = setInterval(() => {
+            let itemLeft = parseInt(state.attackingItem.element.style.left);
+            let itemTop = parseInt(state.attackingItem.element.style.top);
+            
+            if (itemLeft > state.lastMouseX) {
+              itemLeft -= Math.min(itemLeft - state.lastMouseX, ITEM_MOVE_SPEED);
+            }
+            else if (itemLeft < state.lastMouseX) {
+              itemLeft += Math.min(itemLeft + state.lastMouseX, ITEM_MOVE_SPEED);
+            }
+            
+            if (itemTop > state.lastMouseY) {
+              itemTop -= Math.min(itemTop - state.lastMouseY, ITEM_MOVE_SPEED);
+            }
+            else if (itemTop < state.lastMouseY) {
+              itemTop += Math.min(itemTop + state.lastMouseY, ITEM_MOVE_SPEED);
+            }
+            
+            // Check everything as the item could be cleared before we act
+            if (state.attackingItem) {
+              state.attackingItem.element.style.left = itemLeft + "px";
+            }
+            if (state.attackingItem) {
+              state.attackingItem.element.style.top = itemTop + "px";
+            }
+            if (state.attackingItem) {
+              // Reset our cached position
+              state.attackingItem.boundingRect = null;
+            }
+          }, ITEM_MOVE_INTERVAL_MS);
+        }
+      }
+      
+      function stopAttacking() {
+        state.attackingItem = null;
+        if (state.attackingItemInterval) {
+          clearInterval(state.attackingItemInterval);
+          state.attackingItemInterval = null;
+        }
+      }
+      
       function createPiece(imgPath) {
         const minX = elements.map.offsetLeft;
         const minY = elements.map.offsetTop;
@@ -235,7 +293,13 @@
             data.currentNode.style.zIndex = state.currentZIndex;
             elements.infoWrap.textContent = "";
             
-            // TTODO Start moving a random item towards the dragged piece
+            state.isDragging = true;
+            
+            // Most of the time choose a random item and have it start moving towards our mouse...
+            // The MOUSE, specifically NOT towards the piece, as then we have to do position + translate math and boundingRect needlessly
+            if (util.getRandomFloat() < 0.75) {
+              startAttacking();
+            }
           },
           onDrag: (data) => {
             const candidate = {
@@ -251,7 +315,6 @@
             let isHit = Infinity;
             for (const checkItem of items.all) {
               // Cache our item position if we haven't already
-              // TODO This will need to change if the item starts moving!!!
               if (!checkItem.boundingRect) {
                 checkItem.boundingRect = checkItem.element.getBoundingClientRect();
               }
@@ -406,6 +469,12 @@
       function init() {
         document.addEventListener("visibilitychange", (event) => {
           state.paused = !state.paused;
+        });
+        
+        document.addEventListener("mousemove", (event) => {
+          // Since our items are intentionally bound to the map, we want to include the offset for our coordinates
+          state.lastMouseX = event.clientX - elements.map.offsetLeft;
+          state.lastMouseY = event.clientY - elements.map.offsetTop;
         });
         
         elements.map.style.background = `radial-gradient(circle, ${util.getRandomRGBA()} 0%, ${util.getRandomRGBA()} 100%)`;

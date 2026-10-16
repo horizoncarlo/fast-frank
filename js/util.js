@@ -4,6 +4,10 @@ window.util = {
   },
 
   getRandomFloat(min, max, allDecimalPlaces = false) {
+      if (typeof min === "undefined" && typeof max === "undefined") {
+        return rand.random();
+      }
+    
       if (!allDecimalPlaces) {
           return parseFloat(((rand.random() * (max - min)) + min).toFixed(3));
       }
