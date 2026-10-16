@@ -34,10 +34,15 @@
       <br/>
       <div id="newGameButton" class="centered">
         <!-- TODO Add a "Submit Score" checkbox, that does ntfy.sh, but ONLY on win -->
-        <button onclick="util.removeUrlParam('seed', true);" title="New game with a new random map">New Map</button>
+        <button onclick="util.removeUrlParam('seed', true, true);" title="New game with a new random map">New Map</button>
         &nbsp;|&nbsp;
         <button onclick="util.removeUrlParam(null, true);" title="Restart the game with the same map">Try Again</button>
       </div>
+    </div>
+    
+    <div id="localScoreWrap" class="hide">
+      <div class="localScoreHeader">Map Scores</div>
+      <div id="localScoreList"></div>
     </div>
     
     <!-- TODO For now hide Configuration and Setup, we'll revisit as an initial step before map is shown at a later time
@@ -65,7 +70,7 @@
           <span id="scoreMessage" class="scoreMessageRed"></span>
         </td>
         <td id="gameButtons" style="text-align: right;" class="hide">
-          <button onclick="util.removeUrlParam('seed', true);" title="New game with a new random map">New Map</button>
+          <button onclick="util.removeUrlParam('seed', true, true);" title="New game with a new random map">New Map</button>
           &nbsp;|&nbsp;
           <button onclick="util.removeUrlParam(null, true);" title="Restart the game with the same map">Try Again</button>
           &nbsp;|&nbsp;
@@ -149,6 +154,8 @@
         infoWrap: document.getElementById("infoWrap"),
         scoreCounter: document.getElementById("scoreCounter"),
         scoreMessage: document.getElementById("scoreMessage"),
+        localScoreWrap: document.getElementById("localScoreWrap"),
+        localScoreList: document.getElementById("localScoreList"),
       };
       // Track both the image names, and true/false if they have been detected as dropped
       // This is used for determining winning
@@ -498,8 +505,15 @@
       }
       
       function stopGame(gaveUp) {
+        // Clean up any timers and intervals
+        stopAttacking();
         if (state.scoreInterval) {
           clearInterval(state.scoreInterval);
+        }
+        for (const checkItem of items.all) {
+          if (checkItem.moveInterval) {
+            clearInterval(checkItem.moveInterval);
+          }
         }
         
         util.changeClassList("scoreMessage", {
@@ -531,6 +545,37 @@ Can you do better? <a href="${LE_HOST}?seed=${BLUEMAN_SEED}" target="_blank">Try
             show: true,
             hide: false
           });
+          util.changeClassList("localScoreWrap", {
+            show: true,
+            hide: false
+          });
+          
+          // Handle updating and displaying our local scores
+          try {
+            const prevScores = JSON.parse(localStorage.getItem("scores")) ?? {
+              scores: []
+            };
+            const scores = {
+              seed: BLUEMAN_SEED,
+              scores: [
+                ...prevScores?.scores,
+                { timestamp: Date.now(), total: state.score.total.toFixed(2), penalty: state.score.dropPenalty },
+              ]
+            };
+            localStorage.setItem("scores", JSON.stringify(scores));
+            
+            elements.localScoreList.innerHTML = `
+            <ul>
+              ${
+                scores.scores?.reverse().map(
+                  score => "<li>" + new Date(score.timestamp).toLocaleTimeString() + " - " + parseFloat(score.total).toFixed(2) + "s (" + score.penalty + " penalty)</li>"
+                ).join('')
+              }
+            </ul>`;
+          } catch (err) {
+            console.error("Failed to load local storage scores", err);
+            elements.localScoreList.textContent = "Error loading";
+          }
         });
       }
       

@@ -124,11 +124,16 @@ button:hover {
   padding-right: 10px;
 }
 
-#scoreCounter {
+#scoreCounter, .localScoreHeader {
   text-align: left;
   font-size: 2.5em;
   color: limegreen;
   text-shadow: 0 0 10px limegreen;
+}
+
+.localScoreHeader {
+  text-decoration: underline;
+  font-size: large;
 }
 
 #scoreMessage {
@@ -146,7 +151,7 @@ button:hover {
   text-shadow: 0 0 10px red;
 }
 
-#countdownMessageWrap, #endMessageWrap {
+#countdownMessageWrap, #endMessageWrap, #localScoreWrap {
   background-color: black;
   border-radius: 20px;
   border: 1px solid gray;
@@ -172,6 +177,19 @@ button:hover {
   padding: 10px;
   margin: 20px 0 20px 0;
   font-size: large;
+}
+
+#localScoreWrap {
+  animation: none;
+  transition: none;
+  transform: none;
+  border-radius: 0;
+  font-size: unset;
+  top: 0;
+  right: 0;
+  left: auto;
+  padding: 15px;
+  z-index: 9998;
 }
 
 @keyframes dvd-bounce {

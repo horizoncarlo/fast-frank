@@ -66,11 +66,15 @@ window.util = {
     window.history.pushState({}, "", currentUrl);
   },
   
-  removeUrlParam(paramName, isReloadAfter = false) {
+  removeUrlParam(paramName, isReloadAfter = false, isClearStorage = false) {
     if (paramName) {
       const currentUrl = new URL(window.location.href);
       currentUrl.searchParams.delete(paramName);
       window.history.pushState({}, "", currentUrl);
+    }
+    
+    if (isClearStorage) {
+      localStorage.clear();
     }
     
     if (isReloadAfter) {
