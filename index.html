@@ -149,8 +149,8 @@
           if (dropped.classList.contains("dollDrop")) {
             const dragRect = dragEvent.currentNode.getBoundingClientRect();
             const dropRect = dropped.getBoundingClientRect();
-            const deltaX = dragRect.x - dropRect.x;
-            const deltaY = dragRect.y - dropRect.y;
+            const deltaX = Math.round(dragRect.x - dropRect.x);
+            const deltaY = Math.round(dragRect.y - dropRect.y);
             
             // Track that we dropped this piece, if it matches, and then check win condition
             const dragKey = getKeyFromSrc(dragEvent.currentNode.src);
