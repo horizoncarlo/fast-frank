@@ -78,7 +78,8 @@
       const BLUEMAN_DIR = "blueman/";
       const BLUEMAN_EXT = ".png";
       const COLLISION_SAFE_GAP_PX = 0.5;
-      const ITEM_MOVE_SPEED = 1;
+      const ITEM_MOVE_SPEED_TO_MOUSE = 1;
+      const ITEM_MOVE_SPEED_TO_PIECE = 3;
       const ITEM_MOVE_INTERVAL_MS = 20;
       
       // Add our seed to the URL
@@ -227,22 +228,43 @@
         // Chance we don't have a valid item, in which case we do nothing
         state.attackingItem = items.getRandomItem(true);
         if (state.attackingItem) {
+          // Normally we just attack the mouse, but sometimes go to a random viable piece for variety
+          let targetPiece = null;
+          if (util.getRandomFloat() < 0.4) {
+            // Some transformation going on here
+            // Get all active pieces, aka those that haven't been "locked in" on the doll
+            // Then choose a random piece from that
+            // Finally translate the piece into a matching element in the page
+            const activePieces = Object.entries(dollPieces).filter(doll => !doll[1]);
+            const chosenPiece = activePieces[Math.floor(util.getRandomFloat() * activePieces.length)];
+            targetPiece = [...document.getElementsByClassName("piece")].find(ele => ele.src.includes(chosenPiece[0]));
+          }
+          
           state.attackingItemInterval = setInterval(() => {
+            let targetX = state.lastMouseX;
+            let targetY = state.lastMouseY;
+            let moveSpeed = ITEM_MOVE_SPEED_TO_MOUSE;
+            if (targetPiece) {
+              targetX = parseInt(targetPiece.style.left);
+              targetY = parseInt(targetPiece.style.top);
+              moveSpeed = ITEM_MOVE_SPEED_TO_PIECE;
+            }
+            
             let itemLeft = parseInt(state.attackingItem.element.style.left);
             let itemTop = parseInt(state.attackingItem.element.style.top);
             
-            if (itemLeft > state.lastMouseX) {
-              itemLeft -= Math.min(itemLeft - state.lastMouseX, ITEM_MOVE_SPEED);
+            if (itemLeft > targetX) {
+              itemLeft -= Math.min(itemLeft - targetX, moveSpeed);
             }
-            else if (itemLeft < state.lastMouseX) {
-              itemLeft += Math.min(itemLeft + state.lastMouseX, ITEM_MOVE_SPEED);
+            else if (itemLeft < targetX) {
+              itemLeft += Math.min(itemLeft + targetX, moveSpeed);
             }
             
-            if (itemTop > state.lastMouseY) {
-              itemTop -= Math.min(itemTop - state.lastMouseY, ITEM_MOVE_SPEED);
+            if (itemTop > targetY) {
+              itemTop -= Math.min(itemTop - targetY, moveSpeed);
             }
-            else if (itemTop < state.lastMouseY) {
-              itemTop += Math.min(itemTop + state.lastMouseY, ITEM_MOVE_SPEED);
+            else if (itemTop < targetY) {
+              itemTop += Math.min(itemTop + targetY, moveSpeed);
             }
             
             // Check everything as the item could be cleared before we act
@@ -379,10 +401,7 @@
           pieceEle.style.top = state.mapHeight - pieceEle.height + "px";
         }
         
-        // Note in case this was called later, we want to remove any drag and drop translation
-        // Otherwise we could end up placed out of bounds
-        
-        // TTODO Bug still, when hitting a Steering Wheel for Teleport, the next click to drag "jumps" as if offset/translated right away, when this line is uncommented
+        // TODO TELEPORT Bug still, when hitting a Steering Wheel for Teleport, the next click to drag "jumps" as if offset/translated right away, when this line is uncommented
         // Likely need to apply current .translate to our left/top style BEFORE calculating bounds? Or rather not apply it, but calculate bounds with left+translate, then adjust position accordingly
         // pieceEle.style.translate = "0px";
         
@@ -440,6 +459,10 @@
         // After the interval stops we update the page text
         elements.overlayMessageWrap.style.visibility = "visible";
         elements.map.style.pointerEvents = "none";
+        // Clean up any lingering effects
+        elements.map.style.removeProperty("filter");
+        elements.map.style.removeProperty("transform");
+        
         setTimeout(() => {
           const endMessage = gaveUp ?
             "You quit!\n" + getLoseMessage() :

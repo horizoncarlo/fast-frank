@@ -2,12 +2,11 @@ const wallItem = { name: "wall", isWall: true };
 
 window.items = {
   all: [], // element, boundingRect (set later as a cache), onHit (func)
-  // TODO More and more items
   available: [
     wallItem,
     { name: "time-penalty", title: "5-10 second time penalty. Stop for a beer!", onHit: onHitTimePenalty },
     { name: "time-bonus", title: "3-5 second time bonus. Get caffeined up!", onHit: onHitTimeBonus, isClickable: true },
-    { name: "teleport-piece", title: "Teleport the piece to a random location. Vroom vroom!", onHit: onHitTeleportPiece },
+    // TODO Until bug is fixed on teleport (see TODO TELEPORT) let's remove for demo { name: "teleport-piece", title: "Teleport the piece to a random location. Vroom vroom!", onHit: onHitTeleportPiece },
     { name: "lock-piece", title: "Lock the piece for 4-6 seconds. Brr cold!", onHit: onHitLockPiece },
     { name: "undo-piece", title: "Undo the last piece, including any penalty", onHit: onHitUndoPiece, isClickable: true },
     { name: "blackout", title: "Darken the screen a ton for 4-10 seconds. You'll feel better in the morning!", onHit: onHitBlackout },
@@ -105,7 +104,6 @@ window.items = {
       ...itemObj,
       element: newItem,
       onHit: (...args) => {
-        console.log(`onHit with ${itemObj.name}`, args);
         if (typeof itemObj.onHit === "function" && itemObj.onHit(...args) !== false) {
           this.removeItem(newItem);
         }
@@ -185,7 +183,7 @@ function onHitTeleportPiece(dollPiece, itemObj) {
   
   // After next render move the piece
   setTimeout(() => {
-    // TTODO Bug, see in randomizePiecePosition for details
+    // TODO TELEPORT Bug, see in randomizePiecePosition for details
     // dollPiece.style.translate = `${util.getRandomInt(50, 200)}px ${util.getRandomInt(50, 200)}px`;
     randomizePiecePosition(dollPiece);
   });

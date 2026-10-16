@@ -23,6 +23,7 @@ Set max window size to be fair and consistent between monitors
 Supastate https://www.npmjs.com/package/supastate for light state
 
 # What is Left
+- TTODO Scale down items/* images
 - TTODO ntfy.sh on game win/loss
 - TODO Terrain and obstacle generation - different types, locations, maybe positive effects?, etc. Moving obstacles too
   - **This is key** the idea is there are different choices and paths, there should be SOME level of strategy / difference between players on how they approach a map
