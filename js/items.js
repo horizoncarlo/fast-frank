@@ -56,7 +56,7 @@ window.items = {
   
   createItem(isOnlyWalls = false) {
     // Decide which item to create
-    const itemObj = isOnlyWalls ? wallItem : this.available[Math.floor(util.getRandomFloat() * this.available.length)];
+    const itemObj = isOnlyWalls ? wallItem : util.getRandomItemFromArray(this.available);
     const newItem = itemObj.isWall ? document.createElement("div") : document.createElement("img");
     
     if (itemObj.isWall) {
@@ -127,7 +127,7 @@ window.items = {
         checkList = checkList.filter(item => !item.isWall);
       }
       if (checkList.length) {
-        return checkList[Math.floor(util.getRandomFloat() * checkList.length)];
+        return util.getRandomItemFromArray(checkList);
       }
     }
     return null;

@@ -135,7 +135,7 @@
         "doll-leg-starboard": false
       };
       // Groin is sometimes optional
-      if (util.getRandomInt(0, 100) <= 30) {
+      if (util.getRandomFloat() < 0.25) {
         dollPieces["doll-groin"] = false;
       }
       
@@ -174,12 +174,26 @@
       }
       
       function doDropMatchedPiece(penalty, dropPiece) {
-        elements.scoreMessage.textContent = penalty === 0 ? `Perfect` : `+${penalty}s`;
+        const isDecoy = dropPiece.classList.contains("decoy");
+        
+        if (isDecoy) {
+          penalty = 10;
+          elements.scoreMessage.textContent = `Bamboozled by Decoy +${penalty}s`; // Thanks a lot Apex Mirage
+        }
+        else {
+          elements.scoreMessage.textContent = penalty === 0 ? `Perfect` : `+${penalty}s`;
+        }
         
         state.score.total += penalty;
         state.score.dropPenalty += penalty;
         state.score.dropWorst = Math.max(state.score.dropWorst, penalty);
         state.score.dropBest = Math.min(state.score.dropBest ?? Infinity, penalty);
+        
+        if (isDecoy) {
+          dropPiece.style.display = "none";
+          dropPiece.style.pointerEvents = "none";
+          return;
+        }
         
         dollPieces[getKeyFromSrc(dropPiece.src)] = true;
         
@@ -236,7 +250,7 @@
             // Then choose a random piece from that
             // Finally translate the piece into a matching element in the page
             const activePieces = Object.entries(dollPieces).filter(doll => !doll[1]);
-            const chosenPiece = activePieces[Math.floor(util.getRandomFloat() * activePieces.length)];
+            const chosenPiece = util.getRandomItemFromArray(activePieces);
             targetPiece = [...document.getElementsByClassName("piece")].find(ele => ele.src.includes(chosenPiece[0]));
           }
           
@@ -290,7 +304,7 @@
         }
       }
       
-      function createPiece(imgPath) {
+      function createPiece(imgPath, isDecoy = false) {
         const minX = elements.map.offsetLeft;
         const minY = elements.map.offsetTop;
         const maxX = minX + state.mapWidth;
@@ -301,6 +315,11 @@
         newPiece.draggable = false; // Turn off built-in browser image dragging
         newPiece.className = "piece";
         newPiece.style.filter = `hue-rotate(${util.getRandomInt(10, 350)}deg)`;
+        
+        if (isDecoy) {
+          newPiece.className += " decoy";
+          newPiece.style.filter += " drop-shadow(0 0 1px cornflowerblue)";
+        }
         
         elements.map.appendChild(newPiece);
         randomizePiecePosition(newPiece);
@@ -319,6 +338,7 @@
             
             // Most of the time choose a random item and have it start moving towards our mouse...
             // The MOUSE, specifically NOT towards the piece, as then we have to do position + translate math and boundingRect needlessly
+            // TODO Also consider just randomly startAttacking if the user is idle for a while, aka no drag start for X seconds
             if (util.getRandomFloat() < 0.75) {
               startAttacking();
             }
@@ -530,6 +550,13 @@
           Object.keys(dollPieces).forEach((piece) => {
             createPiece(`${BLUEMAN_DIR}${piece}${BLUEMAN_EXT}`);
           });
+          
+          // Potentially create a DECOY piece
+          if (util.getRandomFloat() < 0.4) {
+            const dollPiecesAsList = Object.keys(dollPieces);
+            const decoyPiece = util.getRandomItemFromArray(dollPiecesAsList);
+            createPiece(`${BLUEMAN_DIR}${decoyPiece}${BLUEMAN_EXT}`, true);
+          }
           
           // Remove any walls overlapping with the doll, so we have a clear space to move
           const itemsToRemove = [];

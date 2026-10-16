@@ -37,6 +37,10 @@ window.util = {
                   ${this.getRandomFloat(0.5, 0.7)})`
   },
   
+  getRandomItemFromArray(list) {
+    return list[Math.floor(this.getRandomFloat() * list.length)];
+  },
+  
   changeClassList(forElementId, changes) {
     Object.keys(changes).forEach(change => {
       const found = document.getElementById(forElementId);
